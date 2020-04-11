@@ -1,2 +1,1 @@
-main :: IO ()
-main = pure ()
+{-# OPTIONS_GHC -F -pgmF hspec-discover #-}
