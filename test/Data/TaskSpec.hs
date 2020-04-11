@@ -1,6 +1,6 @@
 {-# options_ghc -Wno-orphans #-}
 
-module Data.TodoSpec (spec) where
+module Data.TaskSpec (spec) where
 
 import Test.Hspec
 
