@@ -1,0 +1,38 @@
+name: build and test
+
+on: [push]
+
+jobs:
+    test:
+        strategy:
+            max-parallel: 4
+            matrix:
+                os: [ubuntu-latest, macos-latest]  # Add windows-latest later
+        runs-on: ${{ matrix.os }}
+        steps:
+            - uses: actions/checkout@v1
+            - uses: mstksg/setup-stack@v2
+            - name: Cache global stack package db
+              uses: actions/cache@v1
+              with:
+                  path: ~/.stack
+                  key:  ${{ matrix.os }}-stack-global
+            - name: Cache stack work
+              uses: actions/cache@v1
+              with:
+                  path: ~/.stack
+                  key:  ${{ matrix.os }}-stack-work-${{ hashFiles('stack.yaml')}}
+            - name: Build
+              run: stack build
+            - name: Test
+              run: stack test
+            # - shell: bash
+            #   run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+            #   id: extract_branch
+            # - name: Upload coverage
+            #   if: matrix.os == 'ubuntu-latest'
+            #   uses: codecov/codecov-action@v1.0.3
+            #   with:
+            #     token: ${{secrets.CODECOV_TOKEN}}
+            #     file: ./.coverage.xml
+            #     flags: ${{ steps.extract_branch.outputs.branch }},py${{ steps.extract_py_version.outputs.py_version }}
