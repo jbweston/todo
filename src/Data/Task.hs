@@ -67,9 +67,7 @@ newTask c d = Task False Nothing Nothing (Just c) d [] [] [] Nothing []
 
 -- | Make a new Task with the provided description and today as the creation date
 getNewTask :: Description -> IO Task
-getNewTask d = do
-    c <- today
-    pure $ newTask c d
+getNewTask d = newTask <$> today <*> pure d
 
 
 -- Utilities
