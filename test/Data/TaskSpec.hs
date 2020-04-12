@@ -18,6 +18,8 @@ spec = do
   describe "makePriority" $ makePriority `onlyTakes` capitalLetters
   describe "makeTag" $ makeTag `onlyTakes` singleWords
   describe "makeTagType" $ makeTagType `onlyTakes` singleWords
+  describe "makeProject" $ makeProject `onlyTakes` singleWords
+  describe "makeContext" $ makeContext `onlyTakes` singleWords
   describe "makeDescription" $ makeDescription `onlyTakes` singleLines
 
 

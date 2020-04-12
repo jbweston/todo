@@ -10,6 +10,8 @@ module Data.Task
   , makePriority
   , makeTag
   , makeTagType
+  , makeProject
+  , makeContext
   , makeDescription
   , newTask
   , getNewTask
@@ -31,22 +33,24 @@ import Control.Applicative
 
 -- Datatypes
 
-newtype Priority = Priority Char deriving Eq
-newtype Tag = Tag Text deriving Eq
-newtype TagType = TagType Text deriving Eq
-newtype Description = Description Text deriving Eq
+newtype Priority = Priority Char deriving (Eq)
+newtype Project = Project Text deriving (Eq)
+newtype Context = Context Text deriving (Eq)
+newtype Tag = Tag Text deriving (Eq)
+newtype TagType = TagType Text deriving (Eq)
+newtype Description = Description Text deriving (Eq)
 data Task = Task {
     completed :: Bool
   , priority :: Maybe Priority
   , completionDate :: Maybe Day
   , creationDate :: Maybe Day
   , description :: Description
-  , projects :: Set Tag
-  , contexts :: Set Tag
+  , projects :: Set Project
+  , contexts :: Set Context
   , tags :: Set Tag
   , dueDate :: Maybe Day
   , extraTags :: Map TagType Tag
-} deriving Eq
+} deriving (Eq)
 
 -- Smart constructors
 
@@ -55,6 +59,12 @@ makePriority = Priority <$$> require (between 'A' 'Z')
 
 makeTag :: Text -> Maybe Tag
 makeTag = Tag <$$> require noSpaces
+
+makeProject :: Text -> Maybe Project
+makeProject = Project <$$> require noSpaces
+
+makeContext :: Text -> Maybe Context
+makeContext = Context <$$> require noSpaces
 
 makeTagType :: Text -> Maybe TagType
 makeTagType = TagType <$$> require noSpaces
