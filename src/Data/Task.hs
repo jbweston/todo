@@ -16,9 +16,12 @@ module Data.Task
   )
 where
 
-import Control.Lens
 import Data.Char (isSpace)
 import Data.Maybe
+import qualified Data.Set as S
+import Data.Set (Set)
+import qualified Data.Map as M
+import Data.Map (Map)
 import qualified Data.Text as T
 import Data.Text (Text)
 import Data.Time (Day)
@@ -33,19 +36,17 @@ newtype Tag = Tag Text deriving Eq
 newtype TagType = TagType Text deriving Eq
 newtype Description = Description Text deriving Eq
 data Task = Task {
-    _completed :: Bool
-  , _priority :: Maybe Priority
-  , _completionDate :: Maybe Day
-  , _creationDate :: Maybe Day
-  , _description :: Description
-  , _projects :: [Tag]
-  , _contexts :: [Tag]
-  , _tags :: [Tag]
-  , _dueDate :: Maybe Day
-  , _extraTags :: [(TagType, Tag)]
+    completed :: Bool
+  , priority :: Maybe Priority
+  , completionDate :: Maybe Day
+  , creationDate :: Maybe Day
+  , description :: Description
+  , projects :: Set Tag
+  , contexts :: Set Tag
+  , tags :: Set Tag
+  , dueDate :: Maybe Day
+  , extraTags :: Map TagType Tag
 } deriving Eq
-
-makeLenses ''Task
 
 -- Smart constructors
 
@@ -63,7 +64,7 @@ makeDescription = Description <$$> require oneLine
 
 -- | Make a new Task with the provided creation date and description
 newTask :: Day -> Description -> Task
-newTask c d = Task False Nothing Nothing (Just c) d [] [] [] Nothing []
+newTask c d = Task False Nothing Nothing (Just c) d S.empty S.empty S.empty Nothing M.empty
 
 -- | Make a new Task with the provided description and today as the creation date
 getNewTask :: Description -> IO Task
