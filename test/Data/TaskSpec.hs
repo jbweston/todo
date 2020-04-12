@@ -2,26 +2,33 @@
 
 module Data.TaskSpec (spec) where
 
+import Control.Applicative (liftA2)
+import qualified Data.Char as C
+import qualified Data.Maybe as M
 import Data.Text (Text)
 import qualified Data.Text as T
-import Test.QuickCheck
-import Test.Hspec
-import Test.Hspec.QuickCheck
+import Test.Hspec (Spec, describe)
+import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck.Instances.Text ()
 
 import Data.Task
 
 spec :: Spec
 spec = do
-  describe "makePriority" $
-    prop "Only takes capital letters" $
-      \(p :: Char) -> False
-  describe "makeTag" $
-    prop "Only takes words" $
-      \(p :: Text) -> False
-  describe "makeTagType" $
-    prop "Only takes words" $
-      \(p :: Text) -> False
-  describe "makeDescription" $
-    prop "Only takes single lines" $
-      \(p :: Text) -> False
+  describe "makePriority" $ makePriority `onlyTakes` capitalLetters
+  describe "makeTag" $ makeTag `onlyTakes` singleWords
+  describe "makeTagType" $ makeTagType `onlyTakes` singleWords
+  describe "makeDescription" $ makeDescription `onlyTakes` singleLines
+
+
+-- Utilities
+
+(.&&.) = liftA2 (&&)
+
+onlyTakes f (p, pred) =
+    prop ("Only takes " ++ p) $ \x ->
+      let fx = f x in if pred x then M.isJust fx else M.isNothing fx
+
+capitalLetters = ("capital letters", C.isAscii .&&. C.isUpper)
+singleWords = ("single words", not . T.any C.isSpace)
+singleLines = ("single lines", not . T.any (== '\n'))
