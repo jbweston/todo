@@ -28,10 +28,10 @@ import Control.Applicative
 
 -- Datatypes
 
-newtype Priority = Priority Char
-newtype Tag = Tag Text
-newtype TagType = TagType Text
-newtype Description = Description Text
+newtype Priority = Priority Char deriving Eq
+newtype Tag = Tag Text deriving Eq
+newtype TagType = TagType Text deriving Eq
+newtype Description = Description Text deriving Eq
 data Task = Task {
     _completed :: Bool
   , _priority :: Maybe Priority
@@ -43,7 +43,7 @@ data Task = Task {
   , _tags :: [Tag]
   , _dueDate :: Maybe Day
   , _extraTags :: [(TagType, Tag)]
-}
+} deriving Eq
 
 makeLenses ''Task
 
