@@ -1,4 +1,6 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Data.Task
   ( Task
   , Priority
@@ -14,6 +16,7 @@ module Data.Task
   )
 where
 
+import Control.Lens
 import Data.Char (isSpace)
 import Data.Maybe
 import qualified Data.Text as T
@@ -30,17 +33,19 @@ newtype Tag = Tag Text
 newtype TagType = TagType Text
 newtype Description = Description Text
 data Task = Task {
-    completed :: Bool
-  , priority :: Maybe Priority
-  , completionDate :: Maybe Day
-  , creationDate :: Maybe Day
-  , description :: Description
-  , projects :: [Tag]
-  , contexts :: [Tag]
-  , tags :: [Tag]
-  , dueDate :: Maybe Day
-  , extraTags :: [(TagType, Tag)]
+    _completed :: Bool
+  , _priority :: Maybe Priority
+  , _completionDate :: Maybe Day
+  , _creationDate :: Maybe Day
+  , _description :: Description
+  , _projects :: [Tag]
+  , _contexts :: [Tag]
+  , _tags :: [Tag]
+  , _dueDate :: Maybe Day
+  , _extraTags :: [(TagType, Tag)]
 }
+
+makeLenses ''Task
 
 -- Smart constructors
 
