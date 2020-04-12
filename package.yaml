@@ -49,5 +49,7 @@ tests:
     dependencies:
     - todo
     - hspec
+    - QuickCheck
+    - quickcheck-instances
     build-tools:
     - hspec-discover
