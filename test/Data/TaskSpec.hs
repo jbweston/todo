@@ -1,4 +1,3 @@
-{-# options_ghc -Wno-orphans #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.TaskSpec (spec) where
