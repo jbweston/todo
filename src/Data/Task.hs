@@ -4,6 +4,8 @@
 module Data.Task
   ( Task
   , Priority
+  , Project
+  , Context
   , Tag
   , TagType
   , Description
