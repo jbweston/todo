@@ -2,6 +2,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 
 module Data.Task
+  -- Types
   ( Task
   , Priority
   , Project
@@ -9,6 +10,17 @@ module Data.Task
   , Tag
   , TagType
   , Description
+  -- Accessors
+  , completed
+  , priority
+  , completionDate
+  , creationDate
+  , description
+  , projects
+  , contexts
+  , tags
+  , dueDate
+  -- Smart constructors
   , makePriority
   , makeTag
   , makeTagType
