@@ -35,11 +35,11 @@ import Control.Applicative
 
 -- Datatypes
 
-newtype Priority = Priority Char deriving (Eq)
-newtype Project = Project Text deriving (Eq)
-newtype Context = Context Text deriving (Eq)
-newtype Tag = Tag Text deriving (Eq)
-newtype TagType = TagType Text deriving (Eq)
+newtype Priority = Priority Char deriving (Eq, Ord)
+newtype Project = Project Text deriving (Eq, Ord)
+newtype Context = Context Text deriving (Eq, Ord)
+newtype Tag = Tag Text deriving (Eq, Ord)
+newtype TagType = TagType Text deriving (Eq, Ord)
 newtype Description = Description Text deriving (Eq)
 data Task = Task {
     completed :: Bool
