@@ -4,9 +4,7 @@ module Data.TaskSpec (spec) where
 
 import Control.Applicative (liftA2)
 import qualified Data.Char as C
-import qualified Data.Maybe as Mb
-import qualified Data.Map as M
-import qualified Data.Set as S
+import qualified Data.Maybe as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Test.Hspec (Spec, describe)
@@ -55,34 +53,33 @@ instance Q.Arbitrary Description where
     arbitrary = applyGen makeDescription $ Q.arbitrary
 
 instance Q.Arbitrary Task where
-    arbitrary = do
-        task <- newTask <$> Q.arbitrary <*> Q.arbitrary
-        -- Maybe add a priority
-        shouldSetPriority <- Q.arbitrary
-        task <- if shouldSetPriority
-          then setPriority <$> Q.arbitrary <*> pure task
-          else pure task
-        -- Add some projects
-        task <- S.foldl (flip addProject) task <$> Q.arbitrary
-        -- Add some contexts
-        task <- S.foldl (flip addContext) task <$> Q.arbitrary
-        -- Add some tags
-        task <- S.foldl (\tsk (tt, t) -> addTag tt t tsk) task <$> Q.arbitrary
-        -- Maybe set due date
-        shouldSetDueDate <- Q.arbitrary
-        task <- if shouldSetDueDate
-          then setDueDate <$> Q.arbitrary <*> pure task
-          else pure task
-        pure task
+    arbitrary =
+        newTask <$> Q.arbitrary <*> Q.arbitrary
+        >>= maybeApply complete
+        >>= maybeApply setPriority
+        >>= applyMany addProject
+        >>= applyMany addContext
+        >>= applyMany addTag
+        >>= maybeApply setDueDate
 
 -- Utilities
 
 (.&&.) :: Applicative f => f Bool -> f Bool -> f Bool
 (.&&.) = liftA2 (&&)
 
+maybeApply :: Q.Arbitrary a => (a -> b -> b) -> b -> Q.Gen b
+maybeApply setter task = do
+    should <- Q.arbitrary
+    if should
+        then setter <$> Q.arbitrary <*> pure task
+        else pure task
+
+applyMany :: forall a b . Q.Arbitrary a => (a -> b -> b) -> b -> Q.Gen b
+applyMany adder task = foldr adder task <$> (Q.arbitrary :: Q.Gen [a])
+
 onlyTakes f (p, pred) =
     prop ("Only takes " ++ p) $ \x ->
-      let fx = f x in if pred x then Mb.isJust fx else Mb.isNothing fx
+      let fx = f x in if pred x then M.isJust fx else M.isNothing fx
 
 someText = (not . T.null) .&&. T.all C.isPrint
 capitalLetters = ("capital letters", C.isAscii .&&. C.isUpper)
