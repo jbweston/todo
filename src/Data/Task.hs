@@ -150,8 +150,8 @@ setDueDate d tsk = tsk{dueDate=Just d}
 unsetDueDate :: Task -> Task
 unsetDueDate tsk = tsk{dueDate=Nothing}
 
-addTag :: TagType -> Tag -> Task -> Task
-addTag tt t tsk = tsk{tags=M.insert tt t (tags tsk)}
+addTag :: (TagType, Tag) -> Task -> Task
+addTag (tt, t) tsk = tsk{tags=M.insert tt t (tags tsk)}
 
 removeTag :: TagType -> Task -> Task
 removeTag tt tsk = tsk{tags=M.delete tt (tags tsk)}
