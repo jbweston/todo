@@ -34,6 +34,7 @@ where
 
 import Prelude
 
+import Control.Applicative (liftA2)
 import Data.Char (isSpace)
 import qualified Data.Set as S
 import Data.Set (Set)
@@ -70,19 +71,19 @@ makePriority :: Char -> Maybe Priority
 makePriority = Priority <$$> require (between 'A' 'Z')
 
 makeProject :: Text -> Maybe Project
-makeProject = Project <$$> require noSpaces
+makeProject = Project <$$> require (notEmpty .&&. noSpaces)
 
 makeContext :: Text -> Maybe Context
-makeContext = Context <$$> require noSpaces
+makeContext = Context <$$> require (notEmpty .&&. noSpaces)
 
 makeTagType :: Text -> Maybe TagType
-makeTagType = TagType <$$> require noSpaces
+makeTagType = TagType <$$> require (notEmpty .&&. noSpaces)
 
 makeDescription :: Text -> Maybe Description
-makeDescription = Description <$$> require oneLine
+makeDescription = Description <$$> require (notEmpty .&&. oneLine)
 
 makeTag :: Text -> Maybe Tag
-makeTag = Tag <$$> require noSpaces
+makeTag = Tag <$$> require (notEmpty .&&. noSpaces)
 
 
 -- | Make a new Task with the provided creation date and description
@@ -99,11 +100,17 @@ getNewTask d = newTask <$> today <*> pure d
 (<$$>) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
 (<$$>) = fmap . fmap
 
+(.&&.) :: Applicative f => f Bool -> f Bool -> f Bool
+(.&&.) = liftA2 (&&)
+
 require :: (a -> Bool) -> a -> Maybe a
 require f a = if f a then Just a else Nothing
 
 between :: Ord a => a -> a -> a -> Bool
 between a b x = x >= a && x <= b
+
+notEmpty :: Text -> Bool
+notEmpty = not . T.null
 
 noSpaces :: Text -> Bool
 noSpaces = not . T.any isSpace

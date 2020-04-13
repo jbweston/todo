@@ -25,6 +25,7 @@ spec = do
 
 -- Utilities
 
+(.&&.) :: Applicative f => f Bool -> f Bool -> f Bool
 (.&&.) = liftA2 (&&)
 
 onlyTakes f (p, pred) =
@@ -32,5 +33,5 @@ onlyTakes f (p, pred) =
       let fx = f x in if pred x then M.isJust fx else M.isNothing fx
 
 capitalLetters = ("capital letters", C.isAscii .&&. C.isUpper)
-singleWords = ("single words", not . T.any C.isSpace)
-singleLines = ("single lines", not . T.any (== '\n'))
+singleWords = ("single words", (not . T.null) .&&. (not . T.any C.isSpace))
+singleLines = ("single lines", (not . T.null) .&&. (not . T.any (== '\n')))
