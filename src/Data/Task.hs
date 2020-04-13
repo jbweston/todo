@@ -29,6 +29,20 @@ module Data.Task
   , makeDescription
   , newTask
   , getNewTask
+  -- Manipulators
+  , complete'
+  , complete
+  , setPriority
+  , unsetPriority
+  , setDescription
+  , addProject
+  , removeProject
+  , addContext
+  , removeContext
+  , setDueDate
+  , unsetDueDate
+  , addTag
+  , removeTag
   )
 where
 
@@ -93,6 +107,54 @@ newTask c d = Task False Nothing Nothing (Just c) d S.empty S.empty M.empty Noth
 -- | Make a new Task with the provided description and today as the creation date
 getNewTask :: Description -> IO Task
 getNewTask d = newTask <$> today <*> pure d
+
+
+-- Functions to manipulate tasks
+-- These could be simplified with Lenses if they get more complicated
+
+complete' :: Day -> Task -> Task
+complete' d tsk =
+    case creationDate tsk of
+      Nothing -> tsk{completed=True}
+      _ -> tsk{completed=True, completionDate=Just d}
+
+complete :: Task -> IO Task
+complete tsk = do
+    d <- today
+    pure $ complete' d tsk
+
+setPriority :: Priority -> Task -> Task
+setPriority p tsk = tsk{priority=Just p}
+
+unsetPriority :: Task -> Task
+unsetPriority tsk = tsk{priority=Nothing}
+
+setDescription :: Description -> Task -> Task
+setDescription d tsk = tsk{description=d}
+
+addProject :: Project -> Task -> Task
+addProject p tsk = tsk{projects=S.insert p (projects tsk)}
+
+removeProject :: Project -> Task -> Task
+removeProject p tsk = tsk{projects=S.delete p (projects tsk)}
+
+addContext :: Context -> Task -> Task
+addContext c tsk = tsk{contexts=S.insert c (contexts tsk)}
+
+removeContext :: Context -> Task -> Task
+removeContext c tsk = tsk{contexts=S.delete c (contexts tsk)}
+
+setDueDate :: Day -> Task -> Task
+setDueDate d tsk = tsk{dueDate=Just d}
+
+unsetDueDate :: Task -> Task
+unsetDueDate tsk = tsk{dueDate=Nothing}
+
+addTag :: TagType -> Tag -> Task -> Task
+addTag tt t tsk = tsk{tags=M.insert tt t (tags tsk)}
+
+removeTag :: TagType -> Task -> Task
+removeTag tt tsk = tsk{tags=M.delete tt (tags tsk)}
 
 
 -- Utilities
