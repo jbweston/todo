@@ -23,7 +23,7 @@ jobs:
                   path: ~/.stack
                   key:  ${{ matrix.os }}-stack-work-${{ hashFiles('stack.yaml')}}
             - name: Build
-              run: stack build
+              run: stack build --ghc-options -Werror
             - name: Test
               run: stack test
             # - shell: bash
