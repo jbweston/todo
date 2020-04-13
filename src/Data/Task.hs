@@ -47,18 +47,14 @@ data Task = Task {
   , description :: Description
   , projects :: Set Project
   , contexts :: Set Context
-  , tags :: Set Tag
+  , tags :: Map TagType Tag
   , dueDate :: Maybe Day
-  , extraTags :: Map TagType Tag
 } deriving (Eq)
 
 -- Smart constructors
 
 makePriority :: Char -> Maybe Priority
 makePriority = Priority <$$> require (between 'A' 'Z')
-
-makeTag :: Text -> Maybe Tag
-makeTag = Tag <$$> require noSpaces
 
 makeProject :: Text -> Maybe Project
 makeProject = Project <$$> require noSpaces
@@ -72,9 +68,13 @@ makeTagType = TagType <$$> require noSpaces
 makeDescription :: Text -> Maybe Description
 makeDescription = Description <$$> require oneLine
 
+makeTag :: Text -> Maybe Tag
+makeTag = Tag <$$> require noSpaces
+
+
 -- | Make a new Task with the provided creation date and description
 newTask :: Day -> Description -> Task
-newTask c d = Task False Nothing Nothing (Just c) d S.empty S.empty S.empty Nothing M.empty
+newTask c d = Task False Nothing Nothing (Just c) d S.empty S.empty M.empty Nothing
 
 -- | Make a new Task with the provided description and today as the creation date
 getNewTask :: Description -> IO Task
