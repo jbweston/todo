@@ -1,5 +1,5 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module Data.Task
   ( Task
@@ -20,8 +20,9 @@ module Data.Task
   )
 where
 
+import Prelude
+
 import Data.Char (isSpace)
-import Data.Maybe
 import qualified Data.Set as S
 import Data.Set (Set)
 import qualified Data.Map as M
@@ -31,16 +32,14 @@ import Data.Text (Text)
 import Data.Time (Day)
 import Data.Time.LocalTime (getZonedTime, ZonedTime(..), LocalTime(..))
 
-import Control.Applicative
-
 -- Datatypes
 
-newtype Priority = Priority Char deriving (Eq, Ord)
-newtype Project = Project Text deriving (Eq, Ord)
-newtype Context = Context Text deriving (Eq, Ord)
-newtype Tag = Tag Text deriving (Eq, Ord)
-newtype TagType = TagType Text deriving (Eq, Ord)
-newtype Description = Description Text deriving (Eq)
+newtype Priority = Priority Char deriving stock (Eq, Ord)
+newtype Project = Project Text deriving stock (Eq, Ord)
+newtype Context = Context Text deriving stock (Eq, Ord)
+newtype Tag = Tag Text deriving stock (Eq, Ord)
+newtype TagType = TagType Text deriving stock (Eq, Ord)
+newtype Description = Description Text deriving stock (Eq)
 data Task = Task {
     completed :: Bool
   , priority :: Maybe Priority
@@ -51,7 +50,7 @@ data Task = Task {
   , contexts :: Set Context
   , tags :: Map TagType Tag
   , dueDate :: Maybe Day
-} deriving (Eq)
+} deriving stock (Eq)
 
 -- Smart constructors
 
@@ -85,12 +84,11 @@ getNewTask d = newTask <$> today <*> pure d
 
 -- Utilities
 
-(.||.) = liftA2 (||)
-
+(<$$>) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
 (<$$>) = fmap . fmap
 
 require :: (a -> Bool) -> a -> Maybe a
-require pred a = if pred a then Just a else Nothing
+require f a = if f a then Just a else Nothing
 
 between :: Ord a => a -> a -> a -> Bool
 between a b x = x >= a && x <= b
