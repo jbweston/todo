@@ -30,8 +30,8 @@ module Data.Task
   , newTask
   , getNewTask
   -- Manipulators
-  , complete'
   , complete
+  , completeToday
   , setPriority
   , unsetPriority
   , setDescription
@@ -112,16 +112,14 @@ getNewTask d = newTask <$> today <*> pure d
 -- Functions to manipulate tasks
 -- These could be simplified with Lenses if they get more complicated
 
-complete' :: Day -> Task -> Task
-complete' d tsk =
+complete :: Day -> Task -> Task
+complete d tsk =
     case creationDate tsk of
       Nothing -> tsk{completed=True}
       _ -> tsk{completed=True, completionDate=Just d}
 
-complete :: Task -> IO Task
-complete tsk = do
-    d <- today
-    pure $ complete' d tsk
+completeToday :: Task -> IO Task
+completeToday tsk = complete <$> today <*> pure tsk
 
 setPriority :: Priority -> Task -> Task
 setPriority p tsk = tsk{priority=Just p}
