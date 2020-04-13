@@ -32,6 +32,7 @@ onlyTakes f (p, pred) =
     prop ("Only takes " ++ p) $ \x ->
       let fx = f x in if pred x then M.isJust fx else M.isNothing fx
 
+someText = (not . T.null) .&&. T.all C.isPrint
 capitalLetters = ("capital letters", C.isAscii .&&. C.isUpper)
-singleWords = ("single words", (not . T.null) .&&. (not . T.any C.isSpace))
-singleLines = ("single lines", (not . T.null) .&&. (not . T.any (== '\n')))
+singleWords = ("single words", someText .&&. (not . T.any C.isSpace))
+singleLines = ("single lines", someText .&&. (not . T.any (== '\n')))

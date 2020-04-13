@@ -35,7 +35,7 @@ where
 import Prelude
 
 import Control.Applicative (liftA2)
-import Data.Char (isSpace)
+import Data.Char (isSpace, isPrint)
 import qualified Data.Set as S
 import Data.Set (Set)
 import qualified Data.Map as M
@@ -71,19 +71,19 @@ makePriority :: Char -> Maybe Priority
 makePriority = Priority <$$> require (between 'A' 'Z')
 
 makeProject :: Text -> Maybe Project
-makeProject = Project <$$> require (notEmpty .&&. noSpaces)
+makeProject = Project <$$> require (someText .&&. noSpaces)
 
 makeContext :: Text -> Maybe Context
-makeContext = Context <$$> require (notEmpty .&&. noSpaces)
+makeContext = Context <$$> require (someText .&&. noSpaces)
 
 makeTagType :: Text -> Maybe TagType
-makeTagType = TagType <$$> require (notEmpty .&&. noSpaces)
+makeTagType = TagType <$$> require (someText .&&. noSpaces)
 
 makeDescription :: Text -> Maybe Description
-makeDescription = Description <$$> require (notEmpty .&&. oneLine)
+makeDescription = Description <$$> require (someText .&&. oneLine)
 
 makeTag :: Text -> Maybe Tag
-makeTag = Tag <$$> require (notEmpty .&&. noSpaces)
+makeTag = Tag <$$> require (someText .&&. noSpaces)
 
 
 -- | Make a new Task with the provided creation date and description
@@ -109,8 +109,8 @@ require f a = if f a then Just a else Nothing
 between :: Ord a => a -> a -> a -> Bool
 between a b x = x >= a && x <= b
 
-notEmpty :: Text -> Bool
-notEmpty = not . T.null
+someText :: Text -> Bool
+someText = (not . T.null) .&&. T.all isPrint
 
 noSpaces :: Text -> Bool
 noSpaces = not . T.any isSpace
