@@ -10,6 +10,7 @@ import qualified Data.Text as T
 import Test.Hspec (Spec, describe)
 import Test.Hspec.QuickCheck (prop)
 import qualified Test.QuickCheck as Q
+import Test.QuickCheck.Gen
 import Test.QuickCheck.Instances.Text ()
 import Test.QuickCheck.Instances.Time ()
 
@@ -27,30 +28,23 @@ spec = do
 
 -- Arbitrary instances
 
-applyGen :: (a -> Maybe b) -> Q.Gen a -> Q.Gen b
-applyGen transform g = do
-    mb <- transform <$> g
-    case mb of
-        Just b -> pure b
-        Nothing -> applyGen transform g
-
 instance Q.Arbitrary Priority where
-    arbitrary = applyGen makePriority $ Q.choose ('A', 'Z')
+    arbitrary = Q.choose ('A', 'Z') `suchThatMap` makePriority
 
 instance Q.Arbitrary Project where
-    arbitrary = applyGen makeProject $ Q.arbitrary
+    arbitrary = Q.arbitrary `suchThatMap` makeProject
 
 instance Q.Arbitrary Context where
-    arbitrary = applyGen makeContext $ Q.arbitrary
+    arbitrary = Q.arbitrary `suchThatMap` makeContext
 
 instance Q.Arbitrary TagType where
-    arbitrary = applyGen makeTagType $ Q.arbitrary
+    arbitrary = Q.arbitrary `suchThatMap` makeTagType
 
 instance Q.Arbitrary Tag where
-    arbitrary = applyGen makeTag $ Q.arbitrary
+    arbitrary = Q.arbitrary `suchThatMap` makeTag
 
 instance Q.Arbitrary Description where
-    arbitrary = applyGen makeDescription $ Q.arbitrary
+    arbitrary = Q.arbitrary `suchThatMap` makeDescription
 
 instance Q.Arbitrary Task where
     arbitrary =
