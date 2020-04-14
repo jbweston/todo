@@ -24,6 +24,18 @@ spec = do
   describe "makeProject" $ makeProject `onlyTakes` singleWords
   describe "makeContext" $ makeContext `onlyTakes` singleWords
   describe "makeDescription" $ makeDescription `onlyTakes` singleLines
+  describe "complete" $ idempotent2 complete
+  describe "setPriority" $ idempotent2 setPriority
+  describe "unsetPriority" $ idempotent unsetPriority
+  describe "setDescription" $ idempotent2 setDescription
+  describe "addProject" $ idempotent2 addProject
+  describe "removeProject" $ idempotent2 removeProject
+  describe "addContext" $ idempotent2 addContext
+  describe "removeContext" $ idempotent2 removeContext
+  describe "setDueDate" $ idempotent2 setDueDate
+  describe "unsetDueDate" $ idempotent unsetDueDate
+  describe "addTag" $ idempotent2 addTag
+  describe "removeTag" $ idempotent2 removeTag
 
 
 -- Arbitrary instances
@@ -57,6 +69,10 @@ instance Q.Arbitrary Task where
         >>= maybeApply setDueDate
 
 -- Utilities
+
+idempotent f = prop "Is idempotent" $ \x -> f x == (f . f) x
+
+idempotent2 f = prop "Is idempotent" $ \x y -> f x y == (f x . f x) y
 
 (.&&.) :: Applicative f => f Bool -> f Bool -> f Bool
 (.&&.) = liftA2 (&&)
