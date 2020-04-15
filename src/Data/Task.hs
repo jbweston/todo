@@ -1,5 +1,6 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Data.Task
   -- Types
@@ -20,6 +21,9 @@ module Data.Task
   , contexts
   , tags
   , dueDate
+  -- serializers and parsers
+  , serialize
+  , parse
   -- Smart constructors
   , makePriority
   , makeTag
@@ -49,7 +53,10 @@ where
 import Prelude
 
 import Control.Applicative (liftA2)
+import Control.Monad.Reader
+import Control.Monad.Writer
 import Data.Char (isSpace, isPrint)
+import Data.Functor.Identity
 import qualified Data.Set as S
 import Data.Set (Set)
 import qualified Data.Map as M
@@ -57,6 +64,7 @@ import Data.Map (Map)
 import qualified Data.Text as T
 import Data.Text (Text)
 import Data.Time (Day)
+import Data.Time.Format.ISO8601 (iso8601Show)
 import Data.Time.LocalTime (getZonedTime, ZonedTime(..), LocalTime(..))
 
 -- Datatypes
@@ -79,6 +87,54 @@ data Task = Task {
   , dueDate :: Maybe Day
 } deriving stock (Eq, Show)
 
+
+-- ReaderT Task (WriterT Text Identity) ()
+serialize :: Task -> Text
+serialize t = let
+    textShow = T.pack . show
+    textDate = T.pack . iso8601Show
+    items = M.foldrWithKey (\k v it -> (k,v):it) []
+    serializer :: ReaderT Task (WriterT Text Identity) ()
+    serializer = do
+        -- Completed
+        cmplt <- asks completed
+        tell $ if cmplt then "x " else ""
+        -- Priority
+        prio <- asks priority
+        tell $ case prio of
+            Nothing -> ""
+            Just (Priority p) -> "(" <> textShow p <> ") "
+        -- Completion date
+        cmpdate <- asks completionDate
+        tell $ case cmpdate of
+            Nothing -> ""
+            Just c -> textDate c <> " "
+        -- Creation date
+        crdate <- asks creationDate
+        tell $ case crdate of
+            Nothing -> ""
+            Just c' -> textDate c' <> " "
+        -- Description
+        Description descr <- asks description
+        tell descr
+        -- Projects
+        proj <- asks projects
+        forM_ proj $ \(Project p) ->
+            tell $ " +" <> p
+        -- Contexts
+        ctx <- asks contexts
+        forM_ ctx $ \(Context ct) ->
+            tell $ " @" <> ct
+        -- Tags
+        tgs <- asks tags
+        forM_ (items tgs) $ \(TagType tt, Tag tg) ->
+            tell $ " " <> tt <> ":" <> tg
+    in
+    runIdentity . execWriterT . runReaderT serializer $ t
+
+parse :: Text -> Maybe Task
+parse = undefined
+
 -- Smart constructors
 
 makePriority :: Char -> Maybe Priority
@@ -99,7 +155,6 @@ makeDescription = Description <$$> require oneLine
 makeTag :: Text -> Maybe Tag
 makeTag = Tag <$$> require oneWord
 
-
 -- | Make a new Task with the provided creation date and description
 newTask :: Day -> Description -> Task
 newTask c d = Task False Nothing Nothing (Just c) d S.empty S.empty M.empty Nothing
@@ -107,7 +162,6 @@ newTask c d = Task False Nothing Nothing (Just c) d S.empty S.empty M.empty Noth
 -- | Make a new Task with the provided description and today as the creation date
 getNewTask :: Description -> IO Task
 getNewTask d = newTask <$> today <*> pure d
-
 
 -- Functions to manipulate tasks
 -- These could be simplified with Lenses if they get more complicated

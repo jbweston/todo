@@ -62,6 +62,9 @@ spec = do
       prop "Has left inverse" $ \x y -> y == removeTag (fst x) (addTag x y)
   describe "removeTag" $ do
       isIdempotent2 removeTag
+  describe "serialize" $ do
+      prop "Has left inverse" $ \x -> x == (fromJust . parse . serialize) x
+
 
 
 -- Arbitrary instances
