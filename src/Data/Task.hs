@@ -85,19 +85,19 @@ makePriority :: Char -> Maybe Priority
 makePriority = Priority <$$> require (between 'A' 'Z')
 
 makeProject :: Text -> Maybe Project
-makeProject = Project <$$> require (someText .&&. noSpaces)
+makeProject = Project <$$> require oneWord
 
 makeContext :: Text -> Maybe Context
-makeContext = Context <$$> require (someText .&&. noSpaces)
+makeContext = Context <$$> require oneWord
 
 makeTagType :: Text -> Maybe TagType
-makeTagType = TagType <$$> require (someText .&&. noSpaces)
+makeTagType = TagType <$$> require oneWord
 
 makeDescription :: Text -> Maybe Description
-makeDescription = Description <$$> require (someText .&&. oneLine)
+makeDescription = Description <$$> require oneLine
 
 makeTag :: Text -> Maybe Tag
-makeTag = Tag <$$> require (someText .&&. noSpaces)
+makeTag = Tag <$$> require oneWord
 
 
 -- | Make a new Task with the provided creation date and description
@@ -163,20 +163,22 @@ removeTag tt tsk = tsk{tags=M.delete tt (tags tsk)}
 (.&&.) :: Applicative f => f Bool -> f Bool -> f Bool
 (.&&.) = liftA2 (&&)
 
+(.||.) :: Applicative f => f Bool -> f Bool -> f Bool
+(.||.) = liftA2 (||)
+
 require :: (a -> Bool) -> a -> Maybe a
 require f a = if f a then Just a else Nothing
 
 between :: Ord a => a -> a -> a -> Bool
 between a b x = x >= a && x <= b
 
-someText :: Text -> Bool
-someText = (not . T.null) .&&. T.all isPrint
 
-noSpaces :: Text -> Bool
-noSpaces = not . T.any isSpace
+oneWord :: Text -> Bool
+oneWord = (not . T.null) .&&. T.all (isPrint .&&. (not . isSpace))
 
 oneLine :: Text -> Bool
-oneLine = not . T.any (== '\n')
+oneLine = (not . T.null) .&&. T.all (printable .&&. (/= '\n'))
+  where printable = isPrint .||. (== '\t')
 
 today :: IO Day
 today = localDay . zonedTimeToLocalTime <$> getZonedTime

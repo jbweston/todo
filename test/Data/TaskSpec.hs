@@ -77,6 +77,9 @@ idempotent2 f = prop "Is idempotent" $ \x y -> f x y == (f x . f x) y
 (.&&.) :: Applicative f => f Bool -> f Bool -> f Bool
 (.&&.) = liftA2 (&&)
 
+(.||.) :: Applicative f => f Bool -> f Bool -> f Bool
+(.||.) = liftA2 (||)
+
 maybeApply :: Q.Arbitrary a => (a -> b -> b) -> b -> Q.Gen b
 maybeApply setter task = do
     should <- Q.arbitrary
@@ -85,13 +88,18 @@ maybeApply setter task = do
         else pure task
 
 applyMany :: forall a b . Q.Arbitrary a => (a -> b -> b) -> b -> Q.Gen b
-applyMany adder task = foldr adder task <$> (Q.arbitrary :: Q.Gen [a])
+applyMany adder task = foldr adder task <$> arb
+  where
+    arb :: Q.Gen [a]
+    arb = do
+        n <- min 10 <$> getSize
+        resize n Q.arbitrary
 
 onlyTakes f (p, pred) =
     prop ("Only takes " ++ p) $ \x ->
       let fx = f x in if pred x then M.isJust fx else M.isNothing fx
 
-someText = (not . T.null) .&&. T.all C.isPrint
+someText = (not . T.null) .&&. T.all (C.isPrint .||. (== '\t'))
 capitalLetters = ("capital letters", C.isAscii .&&. C.isUpper)
 singleWords = ("single words", someText .&&. (not . T.any C.isSpace))
 singleLines = ("single lines", someText .&&. (not . T.any (== '\n')))
