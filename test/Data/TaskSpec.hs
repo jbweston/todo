@@ -5,7 +5,9 @@ module Data.TaskSpec (spec) where
 import Control.Applicative (liftA2)
 import qualified Data.Char as C
 import qualified Data.List as L
-import qualified Data.Maybe as M
+import Data.Maybe
+import qualified Data.Map as M
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Test.Hspec (Spec, describe)
@@ -27,17 +29,39 @@ spec = do
   describe "makeContext" $ makeContext `onlyTakes` singleWords
   describe "makeDescription" $ makeDescription `onlyTakes` singleLines
   describe "complete" $ isIdempotent2 complete
-  describe "setPriority" $ isIdempotent2 setPriority
-  describe "unsetPriority" $ isIdempotent unsetPriority
-  describe "setDescription" $ isIdempotent2 setDescription
-  describe "addProject" $ isIdempotent2 addProject
-  describe "removeProject" $ isIdempotent2 removeProject
-  describe "addContext" $ isIdempotent2 addContext
-  describe "removeContext" $ isIdempotent2 removeContext
-  describe "setDueDate" $ isIdempotent2 setDueDate
-  describe "unsetDueDate" $ isIdempotent unsetDueDate
-  describe "addTag" $ isIdempotent2 addTag
-  describe "removeTag" $ isIdempotent2 removeTag
+  describe "setPriority" $ do
+      isIdempotent2 setPriority
+      setPriority `hasLeftInverse` (fromJust . priority)
+  describe "unsetPriority" $ do
+      isIdempotent unsetPriority
+      unsetPriority `unsets` priority
+  describe "setDescription" $ do
+      isIdempotent2 setDescription
+      setDescription `hasLeftInverse` description
+  describe "addProject" $ do
+      isIdempotent2 addProject
+      addProject `addsToSet` projects
+      addProject `hasLeftInverse2` removeProject
+  describe "removeProject" $ do
+      isIdempotent2 removeProject
+  describe "addContext" $ do
+      isIdempotent2 addContext
+      addContext `hasLeftInverse2` removeContext
+      addContext `addsToSet` contexts
+  describe "removeContext" $ do
+      isIdempotent2 removeContext
+  describe "setDueDate" $ do
+      isIdempotent2 setDueDate
+      setDueDate `hasLeftInverse` (fromJust . dueDate)
+  describe "unsetDueDate" $ do
+      isIdempotent unsetDueDate
+      unsetDueDate `unsets` dueDate
+  describe "addTag" $ do
+      isIdempotent2 addTag
+      addTag `addsToMap` tags
+      prop "Has left inverse" $ \x y -> y == removeTag (fst x) (addTag x y)
+  describe "removeTag" $ do
+      isIdempotent2 removeTag
 
 
 -- Arbitrary instances
@@ -98,6 +122,16 @@ isIdempotent f = prop "Is idempotent" $ \x -> f x == (f . f) x
 
 isIdempotent2 f = prop "Is idempotent" $ \x y -> f x y == (f x . f x) y
 
+hasLeftInverse f g = prop "Has left inverse" $ \x y -> x == g (f x y)
+
+hasLeftInverse2 f g = prop "Has left inverse" $ \x y -> y == g x (f x y)
+
+unsets f g = prop "Unsets" $ \x -> isNothing . g . f $ x
+
+addsToSet addTo get = prop "Adds to" $ \x y -> x `S.member` get (addTo x y)
+
+addsToMap addTo get = prop "Adds to" $ \x y -> fst x `M.member` get (addTo x y)
+
 (.&&.) :: Applicative f => f Bool -> f Bool -> f Bool
 (.&&.) = liftA2 (&&)
 
@@ -121,7 +155,7 @@ applyMany adder task = foldr adder task <$> arb
 
 onlyTakes f (p, pred) =
     prop ("Only takes " ++ p) $ \x ->
-      let fx = f x in if pred x then M.isJust fx else M.isNothing fx
+      let fx = f x in if pred x then isJust fx else isNothing fx
 
 someText = (not . T.null) .&&. T.all (C.isPrint .||. (== '\t'))
 capitalLetters = ("capital letters", C.isAscii .&&. C.isUpper)
