@@ -56,7 +56,6 @@ import Control.Applicative (liftA2)
 import Control.Monad.Reader
 import Control.Monad.Writer
 import Data.Char (isSpace, isPrint)
-import Data.Functor.Identity
 import qualified Data.Set as S
 import Data.Set (Set)
 import qualified Data.Map as M
@@ -90,47 +89,40 @@ data Task = Task {
 
 -- ReaderT Task (WriterT Text Identity) ()
 serialize :: Task -> Text
-serialize t = let
+serialize task = let
     textShow = T.pack . show
     textDate = T.pack . iso8601Show
     items = M.foldrWithKey (\k v it -> (k,v):it) []
-    serializer :: ReaderT Task (WriterT Text Identity) ()
+    serializer :: Writer Text ()
     serializer = do
         -- Completed
-        cmplt <- asks completed
-        tell $ if cmplt then "x " else ""
+        tell $ if completed task then "x " else ""
         -- Priority
-        prio <- asks priority
-        tell $ case prio of
+        tell $ case priority task of
             Nothing -> ""
             Just (Priority p) -> "(" <> textShow p <> ") "
         -- Completion date
-        cmpdate <- asks completionDate
-        tell $ case cmpdate of
+        tell $ case completionDate task of
             Nothing -> ""
-            Just c -> textDate c <> " "
+            Just cdate -> textDate cdate <> " "
         -- Creation date
-        crdate <- asks creationDate
-        tell $ case crdate of
+        tell $ case creationDate task of
             Nothing -> ""
-            Just c' -> textDate c' <> " "
+            Just crdate -> textDate crdate <> " "
         -- Description
-        Description descr <- asks description
+        let Description descr = description task
         tell descr
         -- Projects
-        proj <- asks projects
-        forM_ proj $ \(Project p) ->
+        forM_ (projects task) $ \(Project p) ->
             tell $ " +" <> p
         -- Contexts
-        ctx <- asks contexts
-        forM_ ctx $ \(Context ct) ->
+        forM_ (contexts task) $ \(Context ct) ->
             tell $ " @" <> ct
         -- Tags
-        tgs <- asks tags
-        forM_ (items tgs) $ \(TagType tt, Tag tg) ->
+        forM_ (items $ tags task) $ \(TagType tt, Tag tg) ->
             tell $ " " <> tt <> ":" <> tg
     in
-    runIdentity . execWriterT . runReaderT serializer $ t
+    execWriter serializer
 
 parse :: Text -> Maybe Task
 parse = undefined
