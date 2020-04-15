@@ -26,18 +26,18 @@ spec = do
   describe "makeProject" $ makeProject `onlyTakes` singleWords
   describe "makeContext" $ makeContext `onlyTakes` singleWords
   describe "makeDescription" $ makeDescription `onlyTakes` singleLines
-  describe "complete" $ idempotent2 complete
-  describe "setPriority" $ idempotent2 setPriority
-  describe "unsetPriority" $ idempotent unsetPriority
-  describe "setDescription" $ idempotent2 setDescription
-  describe "addProject" $ idempotent2 addProject
-  describe "removeProject" $ idempotent2 removeProject
-  describe "addContext" $ idempotent2 addContext
-  describe "removeContext" $ idempotent2 removeContext
-  describe "setDueDate" $ idempotent2 setDueDate
-  describe "unsetDueDate" $ idempotent unsetDueDate
-  describe "addTag" $ idempotent2 addTag
-  describe "removeTag" $ idempotent2 removeTag
+  describe "complete" $ isIdempotent2 complete
+  describe "setPriority" $ isIdempotent2 setPriority
+  describe "unsetPriority" $ isIdempotent unsetPriority
+  describe "setDescription" $ isIdempotent2 setDescription
+  describe "addProject" $ isIdempotent2 addProject
+  describe "removeProject" $ isIdempotent2 removeProject
+  describe "addContext" $ isIdempotent2 addContext
+  describe "removeContext" $ isIdempotent2 removeContext
+  describe "setDueDate" $ isIdempotent2 setDueDate
+  describe "unsetDueDate" $ isIdempotent unsetDueDate
+  describe "addTag" $ isIdempotent2 addTag
+  describe "removeTag" $ isIdempotent2 removeTag
 
 
 -- Arbitrary instances
@@ -94,9 +94,9 @@ instance Q.Arbitrary Task where
 
 -- Utilities
 
-idempotent f = prop "Is idempotent" $ \x -> f x == (f . f) x
+isIdempotent f = prop "Is idempotent" $ \x -> f x == (f . f) x
 
-idempotent2 f = prop "Is idempotent" $ \x y -> f x y == (f x . f x) y
+isIdempotent2 f = prop "Is idempotent" $ \x y -> f x y == (f x . f x) y
 
 (.&&.) :: Applicative f => f Bool -> f Bool -> f Bool
 (.&&.) = liftA2 (&&)
