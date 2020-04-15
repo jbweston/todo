@@ -65,5 +65,6 @@ tests:
     - hspec
     - QuickCheck
     - quickcheck-instances
+    - quickcheck-text
     build-tools:
     - hspec-discover

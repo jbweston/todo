@@ -4,12 +4,14 @@ module Data.TaskSpec (spec) where
 
 import Control.Applicative (liftA2)
 import qualified Data.Char as C
+import qualified Data.List as L
 import qualified Data.Maybe as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Test.Hspec (Spec, describe)
 import Test.Hspec.QuickCheck (prop)
 import qualified Test.QuickCheck as Q
+import qualified Test.QuickCheck.Utf8 as U
 import Test.QuickCheck.Gen
 import Test.QuickCheck.Instances.Text ()
 import Test.QuickCheck.Instances.Time ()
@@ -40,23 +42,45 @@ spec = do
 
 -- Arbitrary instances
 
+arbitraryWord :: Gen Text
+arbitraryWord = T.pack <$> listOf1 wordChar
+  where wordChar = U.genChar `suchThat` (C.isPrint .&&. (not . C.isSpace))
+
+arbitraryWhitespace :: Gen Text
+arbitraryWhitespace = elements $ map (T.singleton . C.chr) unicodeSpaces
+    where
+      -- https://en.wikipedia.org/wiki/Template:Whitespace_(Unicode)
+      unicodeSpaces =
+        [
+            9, 32, 160, 5760, 8192, 8193, 8194, 8195, 8196,
+            8197, 8198, 8199, 8200, 8201, 8202, 8239, 8287, 12288
+        ]
+
+arbitraryLine :: Gen Text
+arbitraryLine = do
+    n <- getSize
+    k <- choose (1, n)
+    let words = take k $ repeat arbitraryWord
+        line = L.intersperse arbitraryWhitespace words
+    T.concat <$> sequenceA line
+
 instance Q.Arbitrary Priority where
     arbitrary = Q.choose ('A', 'Z') `suchThatMap` makePriority
 
 instance Q.Arbitrary Project where
-    arbitrary = Q.arbitrary `suchThatMap` makeProject
+    arbitrary = arbitraryWord `suchThatMap` makeProject
 
 instance Q.Arbitrary Context where
-    arbitrary = Q.arbitrary `suchThatMap` makeContext
+    arbitrary = arbitraryWord `suchThatMap` makeContext
 
 instance Q.Arbitrary TagType where
-    arbitrary = Q.arbitrary `suchThatMap` makeTagType
+    arbitrary = arbitraryWord `suchThatMap` makeTagType
 
 instance Q.Arbitrary Tag where
-    arbitrary = Q.arbitrary `suchThatMap` makeTag
+    arbitrary = arbitraryWord `suchThatMap` makeTag
 
 instance Q.Arbitrary Description where
-    arbitrary = Q.arbitrary `suchThatMap` makeDescription
+    arbitrary = arbitraryLine `suchThatMap` makeDescription
 
 instance Q.Arbitrary Task where
     arbitrary =
