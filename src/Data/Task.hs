@@ -1,6 +1,7 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Data.Task
   -- Types
@@ -90,39 +91,32 @@ data Task = Task {
 -- ReaderT Task (WriterT Text Identity) ()
 serialize :: Task -> Text
 serialize task = let
-    textShow = T.pack . show
     textDate = T.pack . iso8601Show
     items = M.foldrWithKey (\k v it -> (k,v):it) []
-    serializer :: Writer Text ()
+    maybeTell attr f =
+        tell $ case attr task of
+            Nothing -> []
+            Just x -> [f x]
+    serializer :: Writer [Text] ()
     serializer = do
-        -- Completed
-        tell $ if completed task then "x " else ""
-        -- Priority
-        tell $ case priority task of
-            Nothing -> ""
-            Just (Priority p) -> "(" <> textShow p <> ") "
-        -- Completion date
-        tell $ case completionDate task of
-            Nothing -> ""
-            Just cdate -> textDate cdate <> " "
-        -- Creation date
-        tell $ case creationDate task of
-            Nothing -> ""
-            Just crdate -> textDate crdate <> " "
+        tell $ if completed task then ["x"] else []
+        maybeTell priority $ \(Priority p) -> "(" <> T.singleton p <> ")"
+        maybeTell completionDate textDate
+        maybeTell creationDate textDate
         -- Description
         let Description descr = description task
-        tell descr
+        tell [descr]
         -- Projects
         forM_ (projects task) $ \(Project p) ->
-            tell $ " +" <> p
+            tell ["+" <> p]
         -- Contexts
         forM_ (contexts task) $ \(Context ct) ->
-            tell $ " @" <> ct
+            tell ["@" <> ct]
         -- Tags
         forM_ (items $ tags task) $ \(TagType tt, Tag tg) ->
-            tell $ " " <> tt <> ":" <> tg
+            tell [tt <> ":" <> tg]
     in
-    execWriter serializer
+    T.intercalate " " (execWriter serializer)
 
 parse :: Text -> Maybe Task
 parse = undefined
