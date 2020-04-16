@@ -25,6 +25,8 @@ module Data.Task
   -- serializers and parsers
   , serialize
   , parse
+  , parseMany
+  , parser
   -- Smart constructors
   , makePriority
   , makeTag
@@ -66,6 +68,9 @@ import Data.Text (Text)
 import Data.Time (Day)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Data.Time.LocalTime (getZonedTime, ZonedTime(..), LocalTime(..))
+import Data.Void
+import Text.Megaparsec (Parsec, runParser, sepBy1)
+import Text.Megaparsec.Char (eol)
 
 -- Datatypes
 
@@ -88,7 +93,6 @@ data Task = Task {
 } deriving stock (Eq, Show)
 
 
--- ReaderT Task (WriterT Text Identity) ()
 serialize :: Task -> Text
 serialize task = let
     textDate = T.pack . iso8601Show
@@ -118,8 +122,24 @@ serialize task = let
     in
     T.intercalate " " (execWriter serializer)
 
+
+type Parser = Parsec Void Text
+
+parser :: Parser Task
+parser = undefined
+
 parse :: Text -> Maybe Task
-parse = undefined
+parse c=
+    case runParser parser "" c of
+        Left _ -> Nothing
+        Right x -> Just x
+
+parseMany :: Text -> Maybe [Task]
+parseMany c =
+    case runParser (parser `sepBy1` eol) "" c of
+        Left _ -> Nothing
+        Right x -> Just x
+
 
 -- Smart constructors
 
