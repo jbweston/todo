@@ -20,8 +20,12 @@ jobs:
             - name: Cache stack work
               uses: actions/cache@v1
               with:
-                  path: ~/.stack
-                  key:  ${{ matrix.os }}-stack-work-${{ hashFiles('stack.yaml')}}
+                  path: ~/.stack-work
+                  key:  ${{ matrix.os }}-stack-work-${{ format('{0}{1}', hashFiles('stack.yaml'), hashFiles('package.yaml')) }}
+            - name: Setup GHC
+              run: stack setup --install-ghc
+            - name: Build dependencies
+              run: stack build --only-dependencies
             - name: Build
               run: stack build --ghc-options -Werror
             - name: Test
