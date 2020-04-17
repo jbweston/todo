@@ -1,24 +1,26 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Data.TaskSpec (spec) where
+module Data.TaskSpec
+  ( spec,
+  )
+where
 
 import Control.Applicative (liftA2)
 import qualified Data.Char as C
 import qualified Data.List as L
-import Data.Maybe
 import qualified Data.Map as M
+import Data.Maybe
 import qualified Data.Set as S
+import Data.Task
 import Data.Text (Text)
 import qualified Data.Text as T
 import Test.Hspec (Spec, describe)
 import Test.Hspec.QuickCheck (prop)
 import qualified Test.QuickCheck as Q
-import qualified Test.QuickCheck.Utf8 as U
 import Test.QuickCheck.Gen
 import Test.QuickCheck.Instances.Text ()
 import Test.QuickCheck.Instances.Time ()
-
-import Data.Task
+import qualified Test.QuickCheck.Utf8 as U
 
 spec :: Spec
 spec = do
@@ -30,94 +32,108 @@ spec = do
   describe "makeDescription" $ makeDescription `onlyTakes` singleLines
   describe "complete" $ isIdempotent2 complete
   describe "setPriority" $ do
-      isIdempotent2 setPriority
-      setPriority `hasLeftInverse` (fromJust . priority)
+    isIdempotent2 setPriority
+    setPriority `hasLeftInverse` (fromJust . priority)
   describe "unsetPriority" $ do
-      isIdempotent unsetPriority
-      unsetPriority `unsets` priority
+    isIdempotent unsetPriority
+    unsetPriority `unsets` priority
   describe "setDescription" $ do
-      isIdempotent2 setDescription
-      setDescription `hasLeftInverse` description
+    isIdempotent2 setDescription
+    setDescription `hasLeftInverse` description
   describe "addProject" $ do
-      isIdempotent2 addProject
-      addProject `addsToSet` projects
-      addProject `hasLeftInverse2` removeProject
+    isIdempotent2 addProject
+    addProject `addsToSet` projects
+    addProject `hasLeftInverse2` removeProject
   describe "removeProject" $ do
-      isIdempotent2 removeProject
+    isIdempotent2 removeProject
   describe "addContext" $ do
-      isIdempotent2 addContext
-      addContext `hasLeftInverse2` removeContext
-      addContext `addsToSet` contexts
+    isIdempotent2 addContext
+    addContext `hasLeftInverse2` removeContext
+    addContext `addsToSet` contexts
   describe "removeContext" $ do
-      isIdempotent2 removeContext
+    isIdempotent2 removeContext
   describe "setDueDate" $ do
-      isIdempotent2 setDueDate
-      setDueDate `hasLeftInverse` (fromJust . dueDate)
+    isIdempotent2 setDueDate
+    setDueDate `hasLeftInverse` (fromJust . dueDate)
   describe "unsetDueDate" $ do
-      isIdempotent unsetDueDate
-      unsetDueDate `unsets` dueDate
+    isIdempotent unsetDueDate
+    unsetDueDate `unsets` dueDate
   describe "addTag" $ do
-      isIdempotent2 addTag
-      addTag `addsToMap` tags
-      prop "Has left inverse" $ \x y -> y == removeTag (fst x) (addTag x y)
+    isIdempotent2 addTag
+    addTag `addsToMap` tags
+    prop "Has left inverse" $ \x y -> y == removeTag (fst x) (addTag x y)
   describe "removeTag" $ do
-      isIdempotent2 removeTag
+    isIdempotent2 removeTag
   describe "serialize" $ do
-      prop "Has left inverse" $ \x -> x == (fromJust . parse . serialize) x
-
-
+    prop "Has left inverse" $ \x -> x == (fromJust . parse . serialize) x
 
 -- Arbitrary instances
 
 arbitraryWord :: Gen Text
 arbitraryWord = T.pack <$> listOf1 wordChar
-  where wordChar = U.genChar `suchThat` (C.isPrint .&&. (not . C.isSpace))
+  where
+    wordChar = U.genChar `suchThat` (C.isPrint .&&. (not . C.isSpace))
 
 arbitraryWhitespace :: Gen Text
 arbitraryWhitespace = elements $ map (T.singleton . C.chr) unicodeSpaces
-    where
-      -- https://en.wikipedia.org/wiki/Template:Whitespace_(Unicode)
-      unicodeSpaces =
-        [
-            9, 32, 160, 5760, 8192, 8193, 8194, 8195, 8196,
-            8197, 8198, 8199, 8200, 8201, 8202, 8239, 8287, 12288
-        ]
+  where
+    -- https://en.wikipedia.org/wiki/Template:Whitespace_(Unicode)
+    unicodeSpaces =
+      [ 9,
+        32,
+        160,
+        5760,
+        8192,
+        8193,
+        8194,
+        8195,
+        8196,
+        8197,
+        8198,
+        8199,
+        8200,
+        8201,
+        8202,
+        8239,
+        8287,
+        12288
+      ]
 
 arbitraryLine :: Gen Text
 arbitraryLine = do
-    n <- getSize
-    k <- choose (1, n)
-    let words = take k $ repeat arbitraryWord
-        line = L.intersperse arbitraryWhitespace words
-    T.concat <$> sequenceA line
+  n <- getSize
+  k <- choose (1, n)
+  let words = take k $ repeat arbitraryWord
+      line = L.intersperse arbitraryWhitespace words
+  T.concat <$> sequenceA line
 
 instance Q.Arbitrary Priority where
-    arbitrary = Q.choose ('A', 'Z') `suchThatMap` makePriority
+  arbitrary = Q.choose ('A', 'Z') `suchThatMap` makePriority
 
 instance Q.Arbitrary Project where
-    arbitrary = arbitraryWord `suchThatMap` makeProject
+  arbitrary = arbitraryWord `suchThatMap` makeProject
 
 instance Q.Arbitrary Context where
-    arbitrary = arbitraryWord `suchThatMap` makeContext
+  arbitrary = arbitraryWord `suchThatMap` makeContext
 
 instance Q.Arbitrary TagType where
-    arbitrary = arbitraryWord `suchThatMap` makeTagType
+  arbitrary = arbitraryWord `suchThatMap` makeTagType
 
 instance Q.Arbitrary Tag where
-    arbitrary = arbitraryWord `suchThatMap` makeTag
+  arbitrary = arbitraryWord `suchThatMap` makeTag
 
 instance Q.Arbitrary Description where
-    arbitrary = arbitraryLine `suchThatMap` makeDescription
+  arbitrary = arbitraryLine `suchThatMap` makeDescription
 
 instance Q.Arbitrary Task where
-    arbitrary =
-        newTask <$> Q.arbitrary <*> Q.arbitrary
-        >>= maybeApply complete
-        >>= maybeApply setPriority
-        >>= applyMany addProject
-        >>= applyMany addContext
-        >>= applyMany addTag
-        >>= maybeApply setDueDate
+  arbitrary =
+    newTask <$> Q.arbitrary <*> Q.arbitrary
+      >>= maybeApply complete
+      >>= maybeApply setPriority
+      >>= applyMany addProject
+      >>= applyMany addContext
+      >>= applyMany addTag
+      >>= maybeApply setDueDate
 
 -- Utilities
 
@@ -143,24 +159,27 @@ addsToMap addTo get = prop "Adds to" $ \x y -> fst x `M.member` get (addTo x y)
 
 maybeApply :: Q.Arbitrary a => (a -> b -> b) -> b -> Q.Gen b
 maybeApply setter task = do
-    should <- Q.arbitrary
-    if should
-        then setter <$> Q.arbitrary <*> pure task
-        else pure task
+  should <- Q.arbitrary
+  if should
+    then setter <$> Q.arbitrary <*> pure task
+    else pure task
 
-applyMany :: forall a b . Q.Arbitrary a => (a -> b -> b) -> b -> Q.Gen b
+applyMany :: forall a b. Q.Arbitrary a => (a -> b -> b) -> b -> Q.Gen b
 applyMany adder task = foldr adder task <$> arb
   where
     arb :: Q.Gen [a]
     arb = do
-        n <- min 10 <$> getSize
-        resize n Q.arbitrary
+      n <- min 10 <$> getSize
+      resize n Q.arbitrary
 
 onlyTakes f (p, pred) =
-    prop ("Only takes " ++ p) $ \x ->
-      let fx = f x in if pred x then isJust fx else isNothing fx
+  prop ("Only takes " ++ p) $ \x ->
+    let fx = f x in if pred x then isJust fx else isNothing fx
 
 someText = (not . T.null) .&&. T.all (C.isPrint .||. (== '\t'))
+
 capitalLetters = ("capital letters", C.isAscii .&&. C.isUpper)
+
 singleWords = ("single words", someText .&&. (not . T.any C.isSpace))
+
 singleLines = ("single lines", someText .&&. (not . T.any (== '\n')))
