@@ -147,7 +147,7 @@ parseMany c =
 -- Smart constructors
 
 makePriority :: Char -> Maybe Priority
-makePriority = Priority <$$> require (between 'A' 'Z')
+makePriority = Priority <$$> require isUpperAlpha
 
 makeProject :: Text -> Maybe Project
 makeProject = Project <$$> require oneWord
@@ -231,8 +231,8 @@ removeTag tt tsk = tsk {tags = M.delete tt (tags tsk)}
 require :: (a -> Bool) -> a -> Maybe a
 require f a = if f a then Just a else Nothing
 
-between :: Ord a => a -> a -> a -> Bool
-between a b x = x >= a && x <= b
+isUpperAlpha :: Char -> Bool
+isUpperAlpha = ('A' <=) .&&. (<= 'Z')
 
 oneWord :: Text -> Bool
 oneWord = (not . T.null) .&&. T.all (isPrint .&&. (not . isSpace))
