@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 module Data.Task
@@ -12,6 +13,7 @@ module Data.Task
     Tag,
     TagType,
     Description,
+    Parser,
     -- Accessors
     completed,
     priority,
@@ -54,21 +56,25 @@ module Data.Task
 where
 
 import Control.Applicative (liftA2)
+import Control.Lens (over, set)
+import Control.Lens.Tuple
 import Control.Monad.Reader
 import Control.Monad.Writer
 import Data.Char (isPrint, isSpace)
 import qualified Data.Map as M
 import Data.Map (Map)
+import Data.Maybe
 import qualified Data.Set as S
 import Data.Set (Set)
 import qualified Data.Text as T
 import Data.Text (Text)
-import Data.Time (Day)
+import Data.Time (Day, fromGregorian)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Data.Time.LocalTime (LocalTime (..), ZonedTime (..), getZonedTime)
 import Data.Void
-import Text.Megaparsec (Parsec, runParser, sepBy1)
-import Text.Megaparsec.Char (eol)
+import Text.Megaparsec hiding (parse)
+import Text.Megaparsec.Char
+import Text.Megaparsec.Char.Lexer
 import Prelude
 
 -- Datatypes
@@ -131,8 +137,65 @@ serialize task =
 
 type Parser = Parsec Void Text
 
+dateP :: Parser Day
+dateP = do
+  year <- decimal <* single '-'
+  month <- decimal <* single '-'
+  day <- decimal
+  pure $ fromGregorian year month day
+
+-- TODO: clean this up; this function is doing a lot
+--       We can probably replace this with a word parser
+parseDescriptionWords ::
+  [Text] -> ([Text], S.Set Project, S.Set Context, M.Map TagType Tag, Maybe Day)
+parseDescriptionWords = foldr select ([], S.empty, S.empty, M.empty, Nothing)
+  where
+    select word =
+      if T.length word == 1
+        then over _1 (word :)
+        else case T.uncons word of
+          Just ('+', p) -> over _2 (S.insert (Project p))
+          Just ('@', c) -> over _3 (S.insert (Context c))
+          _ -> case T.breakOn ":" word of
+            -- 'word' is not empty, so this can never happen
+            ("", "") -> undefined
+            -- No ':' found; word is just a regular word
+            (_, "") -> over _1 (word :)
+            --
+            (_, ":") -> over _1 (word :)
+            -- ':' occurs at start
+            ("", _) -> over _1 (word :)
+            -- due date specifed
+            ("due", date) -> case parseMaybe dateP (T.tail date) of
+              -- If it's not a date treat it like a regular tag
+              Nothing -> over _4 $ M.insert (TagType "due") (Tag $ T.tail date)
+              -- If it's a date, set the due date
+              jd -> set _5 jd
+            -- any other tag
+            (tt, tg) -> over _4 $ M.insert (TagType tt) (Tag $ T.tail tg)
+
+-- TODO: Make this parser more robust so that it can handle tasks
+--       not produced with 'serialize'
 parser :: Parser Task
-parser = undefined
+parser = do
+  completed <- isJust <$> (optional . try $ single 'x' <* someSpace)
+  priority <- Priority <$$> (optional . try $ (inParens . satisfy $ isUpperAlpha) <* someSpace)
+  d <- count' 0 2 (dateP <* someSpace)
+  let (creationDate, completionDate) = case length d of
+        1 -> (Just (d !! 0), Nothing)
+        2 -> (Just (d !! 1), Just (d !! 0))
+        _ -> (Nothing, Nothing)
+  (descr, projects, contexts, tags, dueDate) <-
+    parseDescriptionWords . T.words <$> takeWhile1P Nothing ((/= '\r') .&&. (/= '\n'))
+  let description = Description $ T.unwords descr
+  pure $ Task {..}
+  where
+    inParens :: Parser a -> Parser a
+    inParens p = single '(' *> p <* single ')'
+    someSpace :: Parser ()
+    someSpace = void $ takeWhile1P (Just "white space") isLineSpace
+    -- We don't want vertical whitespace or carriage returns
+    isLineSpace = isSpace .&&. (isPrint .||. (== '\t'))
 
 parse :: Text -> Maybe Task
 parse c =
