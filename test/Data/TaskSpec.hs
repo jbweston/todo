@@ -72,13 +72,17 @@ spec = do
 arbitraryWord :: Gen Text
 arbitraryWord = T.pack <$> listOf1 wordChar
   where
-    wordChar = U.genChar `suchThat` (C.isPrint .&&. (not . C.isSpace))
+    wordChar = elements $ ['a'..'z'] ++ ['A'..'Z']
+    -- TODO: generalize to be able to handle non-alphabetic words in description
+    -- wordChar = U.genChar `suchThat` (C.isPrint .&&. (not . C.isSpace))
 
 arbitraryWhitespace :: Gen Text
 arbitraryWhitespace = elements $ map (T.singleton . C.chr) unicodeSpaces
   where
     -- https://en.wikipedia.org/wiki/Template:Whitespace_(Unicode)
-    unicodeSpaces =
+    unicodeSpaces = [32]
+    -- TODO: generalize everything to be able to handle arbitrary whitespace
+    {-
       [ 9,
         32,
         160,
@@ -98,6 +102,7 @@ arbitraryWhitespace = elements $ map (T.singleton . C.chr) unicodeSpaces
         8287,
         12288
       ]
+    -}
 
 arbitraryLine :: Gen Text
 arbitraryLine = do
