@@ -122,6 +122,8 @@ serialize task =
         -- Contexts
         forM_ (contexts task) $ \(Context ct) ->
           tell ["@" <> ct]
+        -- Due date
+        maybeTell dueDate (("due:" <>) . textDate)
         -- Tags
         forM_ (items $ tags task) $ \(TagType tt, Tag tg) ->
           tell [tt <> ":" <> tg]
