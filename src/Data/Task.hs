@@ -161,7 +161,7 @@ makeTagType :: Text -> Maybe TagType
 makeTagType = TagType <$$> require oneWord
 
 makeDescription :: Text -> Maybe Description
-makeDescription = Description <$$> require oneLine
+makeDescription = (Description . normalizeWhitespace) <$$> require oneLine
 
 makeTag :: Text -> Maybe Tag
 makeTag = Tag <$$> require oneWord
@@ -243,6 +243,9 @@ oneLine :: Text -> Bool
 oneLine = (not . T.null) .&&. T.all (printable .&&. (/= '\n'))
   where
     printable = isPrint .||. (== '\t')
+
+normalizeWhitespace :: Text -> Text
+normalizeWhitespace = T.unwords . T.words
 
 today :: IO Day
 today = localDay . zonedTimeToLocalTime <$> getZonedTime
