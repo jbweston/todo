@@ -56,15 +56,15 @@ title = txt |> hCenter |> (<=> hBorder)
 taskView :: Task -> W
 taskView = txt |> hCenter
 
-taskListView :: Res -> [Text] -> W
-taskListView r@(Res t) tasks =
+taskListView :: Res -> [Task] -> W
+taskListView r@(Res t) tsks =
   border $ title t <=> mainView
   where
     mainView =
       viewport r Vertical $
         withBorderStyle (borderStyleFromChar '-') $
           vBox $ intersperse hBorder taskViews
-    taskViews = map taskView tasks
+    taskViews = map taskView tsks
 
 main :: IO ()
 main = void $ defaultMain app initialState
