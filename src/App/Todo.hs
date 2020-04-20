@@ -13,9 +13,14 @@ import Brick.Widgets.Center
 import Data.Functor
 import Data.List
 import Data.Text hiding (map, intersperse)
+import Data.Text.IO hiding (putStrLn)
 import qualified Graphics.Vty as V
+import Text.Megaparsec (errorBundlePretty)
+import System.Environment
 
-import Prelude
+import Data.Task
+
+import Prelude hiding (readFile)
 
 (|>) :: (a -> b) -> (b -> c) -> (a -> c)
 (|>) = flip (.)
@@ -24,9 +29,7 @@ newtype Res = Res Text deriving stock (Eq, Ord, Show)
 
 type W = Widget Res
 
-type Task = Text
-
-data State = State ()
+data State = State [Task]
 
 app :: App State e Res
 app =
@@ -37,24 +40,14 @@ app =
       , appChooseCursor = neverShowCursor
       }
 
-initialState :: State
-initialState = State ()
-
 ui :: State -> W
-ui _ = taskListView (Res "All Tasks") taskList
-
-taskList :: [Task]
-taskList =
-  [ "one"
-  , "two"
-  , "three"
-  ]
+ui (State tsks) = taskListView (Res "All Tasks") tsks
 
 title :: Text -> W
 title = txt |> hCenter |> (<=> hBorder)
 
 taskView :: Task -> W
-taskView = txt |> hCenter
+taskView = serialize |> txt |> hCenter
 
 taskListView :: Res -> [Task] -> W
 taskListView r@(Res t) tsks =
@@ -67,4 +60,8 @@ taskListView r@(Res t) tsks =
     taskViews = map taskView tsks
 
 main :: IO ()
-main = void $ defaultMain app initialState
+main = do
+  taskList <- readFile =<< (Prelude.head <$> getArgs)  -- obviously unsafe, but that's the point
+  case parseMany taskList of
+    Left e -> putStrLn $ errorBundlePretty e
+    Right tsks -> void $ defaultMain app (State tsks)
