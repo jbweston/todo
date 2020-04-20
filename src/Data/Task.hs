@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE TupleSections #-}
 
 module Data.Task
   ( -- Types
@@ -136,6 +137,7 @@ serialize task =
    in T.intercalate " " (execWriter serializer)
 
 type Parser = Parsec Void Text
+type ParserError = ParseErrorBundle Text Void
 
 dateP :: Parser Day
 dateP = do
@@ -180,11 +182,10 @@ parser :: Parser Task
 parser = do
   completed <- isJust <$> (optional . try $ single 'x' <* someSpace)
   priority <- Priority <$$> (optional . try $ (inParens . satisfy $ isUpperAlpha) <* someSpace)
-  d <- count' 0 2 (dateP <* someSpace)
-  let (creationDate, completionDate) = case length d of
-        1 -> (Just (d !! 0), Nothing)
-        2 -> (Just (d !! 1), Just (d !! 0))
-        _ -> (Nothing, Nothing)
+  dates <- try twoDates <|> try oneDate <|> pure (Nothing, Nothing)
+  let (creationDate, completionDate) = case dates of
+        (d1, Nothing) -> (d1, Nothing)
+        (d1, d2) -> (d2, d1)
   (descr, projects, contexts, tags, dueDate) <-
     parseDescriptionWords . T.words <$> takeWhile1P Nothing ((/= '\r') .&&. (/= '\n'))
   let description = Description $ T.unwords descr
@@ -194,20 +195,19 @@ parser = do
     inParens p = single '(' *> p <* single ')'
     someSpace :: Parser ()
     someSpace = void $ takeWhile1P (Just "white space") isLineSpace
+    twoDates = (,) <$> (Just <$> dateP <* someSpace) <*> (Just <$> dateP <* someSpace)
+    oneDate  = (, Nothing) <$> (Just <$> dateP <* someSpace)
     -- We don't want vertical whitespace or carriage returns
     isLineSpace = isSpace .&&. (isPrint .||. (== '\t'))
 
-parse :: Text -> Maybe Task
-parse c =
-  case runParser parser "" c of
-    Left _ -> Nothing
-    Right x -> Just x
+parser' :: Parser [Task]
+parser' = parser `sepEndBy` eol
 
-parseMany :: Text -> Maybe [Task]
-parseMany c =
-  case runParser (parser `sepBy1` eol) "" c of
-    Left _ -> Nothing
-    Right x -> Just x
+parse :: Text -> Either ParserError Task
+parse = runParser parser ""
+
+parseMany :: Text -> Either ParserError [Task]
+parseMany = runParser parser' ""
 
 -- Smart constructors
 
