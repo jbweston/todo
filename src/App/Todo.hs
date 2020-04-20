@@ -27,6 +27,9 @@ import Prelude hiding (readFile)
 
 newtype Res = Res Text deriving stock (Eq, Ord, Show)
 
+vpMain :: Res
+vpMain = Res "All Tasks"
+
 type W = Widget Res
 
 data State = State [Task]
@@ -34,14 +37,24 @@ data State = State [Task]
 app :: App State e Res
 app =
   App { appDraw = fmap pure ui
-      , appHandleEvent = resizeOrQuit
+      , appHandleEvent = event
       , appStartEvent = pure
       , appAttrMap =  const $ attrMap V.defAttr []
       , appChooseCursor = neverShowCursor
       }
 
 ui :: State -> W
-ui (State tsks) = taskListView (Res "All Tasks") tsks
+ui (State tsks) = taskListView vpMain tsks
+
+event :: State -> BrickEvent Res e -> EventM Res (Next State)
+event s (VtyEvent (V.EvKey V.KDown []))  = vscroll vpMain 1 >> continue s
+event s (VtyEvent (V.EvKey V.KUp []))    = vscroll vpMain (-1) >> continue s
+event s (VtyEvent (V.EvKey V.KEsc [])) = halt s
+event s (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt s
+event s _ = continue s
+
+vscroll :: Res -> Int -> EventM Res ()
+vscroll vp n = vScrollBy (viewportScroll vp) n
 
 title :: Text -> W
 title = txt |> hCenter |> (<=> hBorder)
