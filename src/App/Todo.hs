@@ -30,7 +30,7 @@ data State = State ()
 
 app :: App State e Res
 app =
-  App { appDraw = const [ui]
+  App { appDraw = fmap pure ui
       , appHandleEvent = resizeOrQuit
       , appStartEvent = pure
       , appAttrMap =  const $ attrMap V.defAttr []
@@ -40,8 +40,8 @@ app =
 initialState :: State
 initialState = State ()
 
-ui :: W
-ui = taskListView (Res "main") taskList
+ui :: State -> W
+ui _ = taskListView (Res "All Tasks") taskList
 
 taskList :: [Task]
 taskList =
