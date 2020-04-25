@@ -6,6 +6,7 @@ module App.Todo
 where
 
 import Brick
+import Brick.BChan
 import Brick.Widgets.Border
 import Brick.Widgets.Border.Style
 import Brick.Widgets.Center
@@ -80,9 +81,14 @@ main :: IO ()
 main = do
   fileName <- Prelude.head <$> getArgs  --obviously unsafe, but it will do for now
   taskList <- parseOrDie fileName
-  uiThread <- async $ void $ defaultMain app (State taskList)
-  wait uiThread
+  fileEvents <- newBChan 100
+  uiThread <- async $ uiMain fileEvents (State taskList)
+  void $ wait uiThread
   where
+    uiMain evChan state = do
+      let b = V.mkVty V.defaultConfig
+      v <- b
+      customMain v b (Just evChan) app state
     parseOrDie fileName = do
       tl <- readFile fileName
       case parseMany tl of
