@@ -17,6 +17,7 @@ import Data.Text.IO hiding (putStrLn)
 import qualified Graphics.Vty as V
 import Text.Megaparsec (errorBundlePretty)
 import System.Environment
+import System.Exit
 
 import Data.Task
 
@@ -72,9 +73,15 @@ taskListView r@(Res t) tsks =
           vBox $ intersperse hBorder taskViews
     taskViews = map taskView tsks
 
+
 main :: IO ()
 main = do
-  taskList <- readFile =<< (Prelude.head <$> getArgs)  -- obviously unsafe, but that's the point
-  case parseMany taskList of
-    Left e -> putStrLn $ errorBundlePretty e
-    Right tsks -> void $ defaultMain app (State tsks)
+  fileName <- Prelude.head <$> getArgs  --obviously unsafe, but it will do for now
+  taskList <- parseOrDie fileName
+  void $ defaultMain app (State taskList)
+  where
+    parseOrDie fileName = do
+      tl <- readFile fileName
+      case parseMany tl of
+        Left e -> die $ errorBundlePretty e
+        Right tsks -> pure tsks
