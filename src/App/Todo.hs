@@ -10,6 +10,8 @@ import Brick.Widgets.Border
 import Brick.Widgets.Border.Style
 import Brick.Widgets.Center
 
+import Control.Concurrent.Async
+
 import Data.Functor
 import Data.List
 import Data.Text hiding (map, intersperse)
@@ -78,7 +80,8 @@ main :: IO ()
 main = do
   fileName <- Prelude.head <$> getArgs  --obviously unsafe, but it will do for now
   taskList <- parseOrDie fileName
-  void $ defaultMain app (State taskList)
+  uiThread <- async $ void $ defaultMain app (State taskList)
+  wait uiThread
   where
     parseOrDie fileName = do
       tl <- readFile fileName

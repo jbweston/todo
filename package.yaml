@@ -20,6 +20,7 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/jbweston/todo#readme>
 
 dependencies:
+- async
 - base >= 4.7 && < 5
 - brick
 - containers
