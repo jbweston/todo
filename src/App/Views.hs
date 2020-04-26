@@ -6,7 +6,8 @@ module App.Views
 where
 
 import Data.Text (Text, singleton)
-import Data.Set (toList)
+import qualified Data.Set
+import qualified Data.Map
 
 import Brick.Widgets.Border
 import Brick.Widgets.Border.Style
@@ -39,11 +40,12 @@ title = txt .> hCenter .> (<=> hBorder)
 taskView :: Task -> W
 taskView t =
   vLimit 5 $
-    prio <+> descr <+> (padLeft Max $ ctxs <+> prjs)
+    prio <+> descr <+> (padLeft Max $ ctxs <+> prjs <+> tgs)
   where
     prio  = t |> priority    |> priorityView |> padLeft (Pad 1) |> padRight (Pad 2)
-    prjs  = t |> projects    |> toList |> map projectView |> map (padLeft $ Pad 1) |> hBox
-    ctxs  = t |> contexts    |> toList |> map contextView |> map (padLeft $ Pad 1) |> hBox
+    prjs  = t |> projects    |> Data.Set.toList |> map projectView |> map (padLeft $ Pad 1) |> hBox
+    ctxs  = t |> contexts    |> Data.Set.toList |> map contextView |> map (padLeft $ Pad 1) |> hBox
+    tgs   = t |> tags        |> Data.Map.toList |> map tagView     |> map (padLeft $ Pad 1) |> hBox
     descr = t |> description |> descriptionView |> descrStyle
     descrStyle = if completed t then withAttr completedStyle else id
 
@@ -56,6 +58,9 @@ projectView = projectText .> ("+" <>) .> txt .> padLeftRight 1 .> withAttr proje
 
 contextView :: Context -> W
 contextView = contextText .> ("@" <>) .> txt .> padLeftRight 1 .> withAttr contextStyle
+
+tagView :: (TagType, Tag) -> W
+tagView (tt, t) = (tagTypeText tt <> ":" <> tagText t) |> txt |> padLeftRight 1 |> withAttr tagStyle
 
 descriptionView :: Description -> W
 descriptionView = descriptionText .> txt
