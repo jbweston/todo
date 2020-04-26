@@ -12,6 +12,7 @@ import Brick.Widgets.Border.Style
 import Brick.Widgets.Center
 
 import Control.Concurrent.Async
+import Control.Monad.IO.Class
 
 import Data.Functor
 import Data.List
@@ -19,8 +20,11 @@ import Data.Text hiding (map, intersperse)
 import Data.Text.IO hiding (putStrLn)
 import qualified Graphics.Vty as V
 import Text.Megaparsec (errorBundlePretty)
+import System.Directory
 import System.Environment
 import System.Exit
+import System.FilePath
+import qualified System.FSNotify as FS
 
 import Data.Task
 
@@ -36,9 +40,11 @@ vpMain = Res "All Tasks"
 
 type W = Widget Res
 
-data State = State [Task]
+data State = State FilePath [Task]
 
-app :: App State e Res
+data Ev = TodoFileUpdated
+
+app :: App State Ev Res
 app =
   App { appDraw = fmap pure ui
       , appHandleEvent = event
@@ -48,13 +54,17 @@ app =
       }
 
 ui :: State -> W
-ui (State tsks) = taskListView vpMain tsks
+ui (State _ tsks) = taskListView vpMain tsks
 
-event :: State -> BrickEvent Res e -> EventM Res (Next State)
+event :: State -> BrickEvent Res Ev -> EventM Res (Next State)
 event s (VtyEvent (V.EvKey V.KDown []))  = vscroll vpMain 1 >> continue s
 event s (VtyEvent (V.EvKey V.KUp []))    = vscroll vpMain (-1) >> continue s
 event s (VtyEvent (V.EvKey V.KEsc [])) = halt s
 event s (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt s
+event (State fp tsks) (AppEvent TodoFileUpdated) = do
+  t <- liftIO $ readFile fp
+  let newTasks = either (const tsks) id (parseMany t)
+  continue $ State fp newTasks
 event s _ = continue s
 
 vscroll :: Res -> Int -> EventM Res ()
@@ -76,15 +86,16 @@ taskListView r@(Res t) tsks =
           vBox $ intersperse hBorder taskViews
     taskViews = map taskView tsks
 
-
 main :: IO ()
 main = do
-  fileName <- Prelude.head <$> getArgs  --obviously unsafe, but it will do for now
+  fileName <- makeAbsolute =<< getFirstArg
   taskList <- parseOrDie fileName
   fileEvents <- newBChan 100
-  uiThread <- async $ uiMain fileEvents (State taskList)
+  uiThread <- async $ uiMain fileEvents (State fileName taskList)
+  _ <- async $ fileWatcher fileName fileEvents uiThread
   void $ wait uiThread
   where
+    getFirstArg = Prelude.head <$> getArgs  -- obviously unsafe, but will do for now
     uiMain evChan state = do
       let b = V.mkVty V.defaultConfig
       v <- b
@@ -94,3 +105,12 @@ main = do
       case parseMany tl of
         Left e -> die $ errorBundlePretty e
         Right tsks -> pure tsks
+
+fileWatcher :: FilePath -> BChan Ev -> Async a -> IO ()
+fileWatcher f chan end = FS.withManager $ \m ->
+  void $ FS.watchDir m dir fileChanged cb >> wait end
+  where
+    cb = const $ writeBChan chan TodoFileUpdated
+    dir = takeDirectory f
+    fileChanged (FS.Modified ef _ _) = (f == ef)
+    fileChanged _ = False

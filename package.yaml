@@ -24,6 +24,9 @@ dependencies:
 - base >= 4.7 && < 5
 - brick
 - containers
+- directory
+- filepath
+- fsnotify
 - lens
 - megaparsec
 - mtl
