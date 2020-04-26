@@ -2,13 +2,11 @@
 
 module App.Views
 ( taskListView
-
 )
 where
 
-import Data.List (intersperse)
-import Data.Text (Text)
-import Data.Set (Set, toList)
+import Data.Text (Text, singleton)
+import Data.Set (toList)
 
 import Brick.Widgets.Border
 import Brick.Widgets.Border.Style
@@ -24,31 +22,6 @@ import Data.Task
 
 import Prelude
 
-title :: Text -> W
-title = txt .> hCenter .> (<=> hBorder)
-
-taskView :: Task -> W
-taskView t =
-  vLimit 5 $
-    descr <+> (padLeft Max $ ctxs <+> prjs)
-  where
-    ctxs = contextsView $ contexts t
-    prjs = projectsView $ projects t
-    descr = descrStyle . txt . descriptionText . description $ t
-    descrStyle = if completed t then withAttr completedStyle else id
-
-projectsView :: Set Project -> W
-projectsView = toList .> map view .> map (padLeft $ Pad 1) .> hBox
-  where
-    view = projectText .> withSpace .> txt .> withAttr projectStyle
-
-contextsView :: Set Context -> W
-contextsView = toList .> map view .> map (padLeft $ Pad 1) .> hBox
-  where
-    view = contextText .> withSpace .> txt .> withAttr contextStyle
-
-withSpace :: Text -> Text
-withSpace t = " " <> t <> " "
 
 taskListView :: Res -> [Task] -> W
 taskListView r@(Res t) tsks =
@@ -56,7 +29,33 @@ taskListView r@(Res t) tsks =
   where
     mainView =
       viewport r Vertical $
-          vBox $ intersperse dashHBorder taskViews
+          vBox $ map (<=> dashHBorder) taskViews
     dashHBorder = withBorderStyle (borderStyleFromChar '-') hBorder
     taskViews = map taskView tsks
 
+title :: Text -> W
+title = txt .> hCenter .> (<=> hBorder)
+
+taskView :: Task -> W
+taskView t =
+  vLimit 5 $
+    prio <+> descr <+> (padLeft Max $ ctxs <+> prjs)
+  where
+    prio  = t |> priority    |> priorityView |> padLeft (Pad 1) |> padRight (Pad 2)
+    prjs  = t |> projects    |> toList |> map projectView |> map (padLeft $ Pad 1) |> hBox
+    ctxs  = t |> contexts    |> toList |> map contextView |> map (padLeft $ Pad 1) |> hBox
+    descr = t |> description |> descriptionView |> descrStyle
+    descrStyle = if completed t then withAttr completedStyle else id
+
+
+priorityView :: Maybe Priority -> W
+priorityView = maybe ' ' priorityChar .> singleton .> txt
+
+projectView :: Project -> W
+projectView = projectText .> txt .> padLeftRight 1 .> withAttr projectStyle
+
+contextView :: Context -> W
+contextView = contextText .> txt .> padLeftRight 1 .> withAttr contextStyle
+
+descriptionView :: Description -> W
+descriptionView = descriptionText .> txt
