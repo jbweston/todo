@@ -52,10 +52,10 @@ priorityView :: Maybe Priority -> W
 priorityView = maybe ' ' priorityChar .> singleton .> txt
 
 projectView :: Project -> W
-projectView = projectText .> txt .> padLeftRight 1 .> withAttr projectStyle
+projectView = projectText .> ("+" <>) .> txt .> padLeftRight 1 .> withAttr projectStyle
 
 contextView :: Context -> W
-contextView = contextText .> txt .> padLeftRight 1 .> withAttr contextStyle
+contextView = contextText .> ("@" <>) .> txt .> padLeftRight 1 .> withAttr contextStyle
 
 descriptionView :: Description -> W
 descriptionView = descriptionText .> txt
