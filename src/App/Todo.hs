@@ -15,7 +15,7 @@ import Control.Concurrent.Async
 import Control.Monad.IO.Class
 
 import Data.Functor
-import Data.List
+import Data.List hiding (unlines)
 import Data.Text hiding (map, intersperse)
 import Data.Text.IO hiding (putStrLn)
 import qualified Graphics.Vty as V
@@ -28,7 +28,7 @@ import qualified System.FSNotify as FS
 
 import Data.Task
 
-import Prelude hiding (readFile)
+import Prelude hiding (readFile, writeFile, unlines)
 
 (|>) :: (a -> b) -> (b -> c) -> (a -> c)
 (|>) = flip (.)
@@ -57,14 +57,22 @@ ui :: State -> W
 ui (State _ tsks) = taskListView vpMain tsks
 
 event :: State -> BrickEvent Res Ev -> EventM Res (Next State)
+-- Scrolling
 event s (VtyEvent (V.EvKey V.KDown []))  = vscroll vpMain 1 >> continue s
 event s (VtyEvent (V.EvKey V.KUp []))    = vscroll vpMain (-1) >> continue s
+-- Quit
 event s (VtyEvent (V.EvKey V.KEsc [])) = halt s
 event s (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt s
+-- Saving
+event s@(State fp tsks) (VtyEvent (V.EvKey (V.KChar 's') [])) = do
+    liftIO $ writeFile fp (unlines $ map serialize tsks)
+    continue s
+-- File changed on disk
 event (State fp tsks) (AppEvent TodoFileUpdated) = do
   t <- liftIO $ readFile fp
   let newTasks = either (const tsks) id (parseMany t)
   continue $ State fp newTasks
+-- Default
 event s _ = continue s
 
 vscroll :: Res -> Int -> EventM Res ()
