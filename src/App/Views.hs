@@ -8,6 +8,7 @@ where
 import Data.Text (Text, singleton)
 import qualified Data.Set
 import qualified Data.Map
+import Data.Maybe (isNothing)
 
 import Brick.Widgets.Border
 import Brick.Widgets.Border.Style
@@ -51,7 +52,9 @@ taskView t =
 
 
 priorityView :: Maybe Priority -> W
-priorityView = maybe ' ' priorityChar .> singleton .> txt
+priorityView p = p |> maybe ' ' priorityChar .> singleton .> txt .> style
+  where
+    style = if isNothing p then id else withAttr priorityStyle
 
 projectView :: Project -> W
 projectView = projectText .> ("+" <>) .> txt .> padLeftRight 1 .> withAttr projectStyle

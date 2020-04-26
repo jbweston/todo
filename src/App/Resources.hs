@@ -6,11 +6,13 @@ module App.Resources
 , projectStyle
 , contextStyle
 , tagStyle
+, priorityStyle
 , uiAttrs
 )
 where
 
 import Graphics.Vty (Attr)
+import Graphics.Vty.Attributes (defAttr, withStyle, bold)
 import Graphics.Vty.Attributes.Color
 import Brick.AttrMap (AttrName)
 import Brick.Util (on, fg)
@@ -26,6 +28,9 @@ vpMain = Res "All Tasks"
 
 
 -- Styles
+
+priorityStyle :: AttrName
+priorityStyle = "priority"
 
 completedStyle :: AttrName
 completedStyle = "completed"
@@ -45,4 +50,5 @@ uiAttrs =
   , (projectStyle, black `on` blue)
   , (contextStyle, black `on` cyan)
   , (tagStyle, black `on` red)
+  , (priorityStyle, defAttr `withStyle` bold)
   ]
