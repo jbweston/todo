@@ -5,7 +5,7 @@ module App.Todo
         (main)
 where
 
-import Brick
+import Brick hiding (Context)
 import Brick.BChan
 import Brick.Widgets.Border
 import Brick.Widgets.Border.Style
@@ -16,9 +16,11 @@ import Control.Monad.IO.Class
 
 import Data.Functor
 import Data.List hiding (unlines)
+import qualified Data.Set as S
 import Data.Text hiding (map, intersperse)
 import Data.Text.IO hiding (putStrLn)
 import qualified Graphics.Vty as V
+import Graphics.Vty.Attributes
 import Text.Megaparsec (errorBundlePretty)
 import System.Directory
 import System.Environment
@@ -49,9 +51,26 @@ app =
   App { appDraw = fmap pure ui
       , appHandleEvent = event
       , appStartEvent = pure
-      , appAttrMap =  const $ attrMap V.defAttr []
+      , appAttrMap =  const $ attrMap V.defAttr uiAttrs
       , appChooseCursor = neverShowCursor
       }
+
+
+completedStyle :: AttrName
+completedStyle = "completed"
+
+projectStyle :: AttrName
+projectStyle = "project"
+
+contextStyle :: AttrName
+contextStyle = "context"
+
+uiAttrs :: [(AttrName, Attr)]
+uiAttrs =
+  [ (completedStyle, fg blue)
+  , (projectStyle, black `on` blue)
+  , (contextStyle, black `on` cyan)
+  ]
 
 ui :: State -> W
 ui (State _ tsks) = taskListView vpMain tsks
@@ -82,7 +101,28 @@ title :: Text -> W
 title = txt |> hCenter |> (<=> hBorder)
 
 taskView :: Task -> W
-taskView = serialize |> txt |> hCenter
+taskView t =
+  vLimit 1 $
+        hCenter descr
+    <+> (contextsView $ contexts t)
+    <+> txt " "
+    <+> (projectsView $ projects t)
+  where
+    descr = descrStyle . txt . descriptionText . description $ t
+    descrStyle = if completed t then withAttr completedStyle else id
+
+projectsView :: S.Set Project -> W
+projectsView = hBox . intersperse (txt " ") . map view . S.toList
+  where
+    view = withAttr projectStyle . txt . withSpace . projectText
+
+contextsView :: S.Set Context -> W
+contextsView = hBox . intersperse (txt " ") . map view . S.toList
+  where
+    view = withAttr contextStyle . txt . withSpace . contextText
+
+withSpace :: Text -> Text
+withSpace t = " " <> t <> " "
 
 taskListView :: Res -> [Task] -> W
 taskListView r@(Res t) tsks =
@@ -90,8 +130,8 @@ taskListView r@(Res t) tsks =
   where
     mainView =
       viewport r Vertical $
-        withBorderStyle (borderStyleFromChar '-') $
-          vBox $ intersperse hBorder taskViews
+          vBox $ intersperse dashHBorder taskViews
+    dashHBorder = withBorderStyle (borderStyleFromChar '-') hBorder
     taskViews = map taskView tsks
 
 main :: IO ()
