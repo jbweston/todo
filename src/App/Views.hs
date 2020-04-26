@@ -41,14 +41,19 @@ title = txt .> hCenter .> (<=> hBorder)
 taskView :: Task -> W
 taskView t =
   vLimit 5 $
-    prio <+> descr <+> (padLeft Max $ ctxs <+> prjs <+> tgs)
+    padL 1 done <+> padLR 1 prio <+> padRight Max descr <+> labelView t
   where
-    prio  = t |> priority    |> priorityView |> padLeft (Pad 1) |> padRight (Pad 2)
-    prjs  = t |> projects    |> Data.Set.toList |> map projectView |> map (padLeft $ Pad 1) |> hBox
-    ctxs  = t |> contexts    |> Data.Set.toList |> map contextView |> map (padLeft $ Pad 1) |> hBox
-    tgs   = t |> tags        |> Data.Map.toList |> map tagView     |> map (padLeft $ Pad 1) |> hBox
-    descr = t |> description |> descriptionView |> descrStyle
-    descrStyle = if completed t then withAttr completedStyle else id
+    done  = t |> completed   |> (\c -> if c then "[x]" else "[ ]") |> txt
+    prio  = t |> priority    |> priorityView
+    descr = t |> description |> descriptionView (completed t)
+
+-- TOOD: Make this a box and reflow
+labelView :: Task -> W
+labelView t = hBox <| map (padL 1) <| prjs <> ctxs <> tgs
+  where
+    prjs  = t |> projects |> Data.Set.toList |> map projectView
+    ctxs  = t |> contexts |> Data.Set.toList |> map contextView
+    tgs   = t |> tags     |> Data.Map.toList |> map tagView
 
 
 priorityView :: Maybe Priority -> W
@@ -65,5 +70,13 @@ contextView = contextText .> ("@" <>) .> txt .> padLeftRight 1 .> withAttr conte
 tagView :: (TagType, Tag) -> W
 tagView (tt, t) = (tagTypeText tt <> ":" <> tagText t) |> txt |> padLeftRight 1 |> withAttr tagStyle
 
-descriptionView :: Description -> W
-descriptionView = descriptionText .> txt
+descriptionView :: Bool -> Description -> W
+descriptionView c = descriptionText .> txt .> style
+  where
+    style = if c then withAttr completedStyle else id
+
+padL :: Int -> W -> W
+padL = padLeft . Pad
+
+padLR :: Int -> W -> W
+padLR = padLeftRight
