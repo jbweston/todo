@@ -5,6 +5,7 @@ module App.Views
 )
 where
 
+import Data.List (sortOn)
 import Data.Text (Text, singleton)
 import qualified Data.Set
 import qualified Data.Map
@@ -33,7 +34,7 @@ taskListView r@(Res t) tsks =
       viewport r Vertical $
           vBox $ map (<=> dashHBorder) taskViews
     dashHBorder = withBorderStyle (borderStyleFromChar '-') hBorder
-    taskViews = map taskView tsks
+    taskViews = map taskView $ sortOn completed tsks
 
 title :: Text -> W
 title = txt .> hCenter .> (<=> hBorder)
