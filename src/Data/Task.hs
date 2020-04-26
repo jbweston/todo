@@ -25,6 +25,13 @@ module Data.Task
     contexts,
     tags,
     dueDate,
+    -- Accessors that unwrap newtypes
+    priorityChar,
+    descriptionText,
+    projectText,
+    contextText,
+    tagText,
+    tagTypeText,
     -- serializers and parsers
     serialize,
     parse,
@@ -80,17 +87,17 @@ import Prelude
 
 -- Datatypes
 
-newtype Priority = Priority Char deriving stock (Eq, Ord, Show)
+newtype Priority = Priority { priorityChar :: Char } deriving stock (Eq, Ord, Show)
 
-newtype Project = Project Text deriving stock (Eq, Ord, Show)
+newtype Project = Project { projectText :: Text } deriving stock (Eq, Ord, Show)
 
-newtype Context = Context Text deriving stock (Eq, Ord, Show)
+newtype Context = Context { contextText :: Text } deriving stock (Eq, Ord, Show)
 
-newtype Tag = Tag Text deriving stock (Eq, Ord, Show)
+newtype Tag = Tag { tagText :: Text } deriving stock (Eq, Ord, Show)
 
-newtype TagType = TagType Text deriving stock (Eq, Ord, Show)
+newtype TagType = TagType { tagTypeText :: Text } deriving stock (Eq, Ord, Show)
 
-newtype Description = Description Text deriving stock (Eq, Show)
+newtype Description = Description { descriptionText :: Text } deriving stock (Eq, Show)
 
 data Task
   = Task
