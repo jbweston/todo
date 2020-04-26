@@ -7,9 +7,11 @@ module App.Types
 )
 where
 
-import Brick.Types
-import Data.Task
+import Brick.Types (Widget)
+import Data.Task (Task)
 import Data.Text (Text)
+
+import Prelude (FilePath, Eq, Ord, Show)
 
 -- | Resources indexed by text
 newtype Res = Res Text deriving stock (Eq, Ord, Show)
