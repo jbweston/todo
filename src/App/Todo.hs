@@ -102,24 +102,23 @@ title = txt |> hCenter |> (<=> hBorder)
 
 taskView :: Task -> W
 taskView t =
-  vLimit 1 $
-        hCenter descr
-    <+> (contextsView $ contexts t)
-    <+> txt " "
-    <+> (projectsView $ projects t)
+  vLimit 5 $
+    descr <+> (padLeft Max $ ctxs <+> prjs)
   where
+    ctxs = contextsView $ contexts t
+    prjs = projectsView $ projects t
     descr = descrStyle . txt . descriptionText . description $ t
     descrStyle = if completed t then withAttr completedStyle else id
 
 projectsView :: S.Set Project -> W
-projectsView = hBox . intersperse (txt " ") . map view . S.toList
+projectsView = S.toList |> map view |> map (padLeft $ Pad 1) |> hBox
   where
-    view = withAttr projectStyle . txt . withSpace . projectText
+    view = projectText |> withSpace |> txt |> withAttr projectStyle
 
 contextsView :: S.Set Context -> W
-contextsView = hBox . intersperse (txt " ") . map view . S.toList
+contextsView = S.toList |> map view |> map (padLeft $ Pad 1) |> hBox
   where
-    view = withAttr contextStyle . txt . withSpace . contextText
+    view = contextText |> withSpace |> txt |> withAttr contextStyle
 
 withSpace :: Text -> Text
 withSpace t = " " <> t <> " "
