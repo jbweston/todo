@@ -6,6 +6,7 @@ module App.Todo
 where
 
 import Brick hiding (Context)
+import Brick.Widgets.List (list)
 import Brick.BChan
 
 import Control.Concurrent (threadDelay)
@@ -14,6 +15,7 @@ import Control.Monad (forever)
 
 import Data.Functor
 import Data.Text.IO hiding (putStrLn)
+import Data.Vector (fromList)
 import qualified Graphics.Vty as V
 import Text.Megaparsec hiding (State)
 import System.Directory
@@ -41,14 +43,14 @@ app =
       }
 
 ui :: State -> W
-ui (State _ tsks row) = taskListView vpMain tsks row
+ui (State _ tasks) = taskListView vpMain tasks
 
 initialState :: FilePath -> IO State
 initialState fileName = do
   tl <- readFile fileName
   case parseMany tl of
     Left e -> die $ errorBundlePretty e
-    Right tasks -> pure $ State fileName tasks 1
+    Right tasks -> pure $ State fileName (list vpMain (fromList tasks) 3)
 
 main :: IO ()
 main = do

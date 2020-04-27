@@ -8,6 +8,7 @@ module App.Types
 where
 
 import Brick.Types (Widget)
+import Brick.Widgets.List (List)
 import Data.Task (Task)
 import Data.Text (Text)
 
@@ -22,8 +23,7 @@ type W = Widget Res
 -- | App state
 
 data State = State { sTodoFile :: FilePath
-                   , sTasks    :: [Task]
-                   , sRow      :: Int
+                   , sTasks    :: List Res Task
                    }
 
 -- | Custom events
