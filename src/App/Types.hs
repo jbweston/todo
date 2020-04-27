@@ -11,7 +11,7 @@ import Brick.Types (Widget)
 import Data.Task (Task)
 import Data.Text (Text)
 
-import Prelude (FilePath, Eq, Ord, Show)
+import Prelude
 
 -- | Resources indexed by text
 newtype Res = Res Text deriving stock (Eq, Ord, Show)
@@ -20,7 +20,8 @@ newtype Res = Res Text deriving stock (Eq, Ord, Show)
 type W = Widget Res
 
 -- | App state
-data State = State FilePath [Task]
+
+data State = State FilePath [Task] Int
 
 -- | Custom events
 data Ev = TodoFileUpdated

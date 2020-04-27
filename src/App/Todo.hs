@@ -41,14 +41,21 @@ app =
       }
 
 ui :: State -> W
-ui (State _ tsks) = taskListView vpMain tsks
+ui (State _ tsks row) = taskListView vpMain tsks row
+
+initialState :: FilePath -> IO State
+initialState fileName = do
+  tl <- readFile fileName
+  case parseMany tl of
+    Left e -> die $ errorBundlePretty e
+    Right tasks -> pure $ State fileName tasks 1
 
 main :: IO ()
 main = do
   fileName <- makeAbsolute =<< getFirstArg
-  taskList <- parseOrDie fileName
+  state <- initialState fileName
   fileEvents <- newBChan 100
-  uiThread <- async $ uiMain fileEvents (State fileName taskList)
+  uiThread <- async $ uiMain fileEvents state
   fwThread <- async $ fileWatcher fileName fileEvents
   void $ wait uiThread
   cancel fwThread
@@ -58,11 +65,6 @@ main = do
       let b = V.mkVty V.defaultConfig
       v <- b
       customMain v b (Just evChan) app state
-    parseOrDie fileName = do
-      tl <- readFile fileName
-      case parseMany tl of
-        Left e -> die $ errorBundlePretty e
-        Right tsks -> pure tsks
 
 fileWatcher :: FilePath -> BChan Ev -> IO ()
 fileWatcher f chan = FS.withManager $ \m ->

@@ -26,15 +26,15 @@ import Data.Task
 import Prelude
 
 
-taskListView :: Res -> [Task] -> W
-taskListView r@(Res t) tsks =
+taskListView :: Res -> [Task] -> Int -> W
+taskListView r@(Res t) tsks row =
   border $ title t <=> mainView
   where
     mainView =
       viewport r Vertical $
           vBox $ map (<=> dashHBorder) taskViews
     dashHBorder = withBorderStyle (borderStyleFromChar '-') hBorder
-    taskViews = map taskView $ sortOn completed tsks
+    taskViews = tsks |> sortOn completed |> map taskView |> highlightSelected row
 
 title :: Text -> W
 title = txt .> hCenter .> (<=> hBorder)
@@ -46,7 +46,7 @@ taskView t =
   where
     done  = t |> completed   |> (\c -> if c then "[x]" else "[ ]") |> txt
     prio  = t |> priority    |> priorityView
-    descr = t |> description |> descriptionView (completed t)
+    descr = t |> description |> descriptionView
 
 -- TOOD: Make this a box and reflow
 labelView :: Task -> W
@@ -71,10 +71,18 @@ contextView = contextText .> ("@" <>) .> txt .> padLeftRight 1 .> withAttr conte
 tagView :: (TagType, Tag) -> W
 tagView (tt, t) = (tagTypeText tt <> ":" <> tagText t) |> txt |> padLeftRight 1 |> withAttr tagStyle
 
-descriptionView :: Bool -> Description -> W
-descriptionView c = descriptionText .> txt .> style
-  where
-    style = if c then withAttr completedStyle else id
+descriptionView :: Description -> W
+descriptionView = descriptionText .> txt
+
+-- Utilities
+
+highlightSelected :: Int -> [W] -> [W]
+highlightSelected row widgets =
+ zip [1..] widgets |> map style
+ where
+   style (i, w)
+     | i == row  = w |> withAttr completedStyle
+     | otherwise = w
 
 padL :: Int -> W -> W
 padL = padLeft . Pad

@@ -24,14 +24,14 @@ event s (VtyEvent (EvKey KUp []))    = vscroll vpMain (-1) >> continue s
 event s (VtyEvent (EvKey KEsc [])) = halt s
 event s (VtyEvent (EvKey (KChar 'q') [])) = halt s
 -- Saving
-event s@(State fp tsks) (VtyEvent (EvKey (KChar 's') [])) = do
+event s@(State fp tsks _) (VtyEvent (EvKey (KChar 's') [])) = do
     liftIO $ writeFile fp (unlines $ map serialize tsks)
     continue s
 -- File changed on disk
-event (State fp tsks) (AppEvent TodoFileUpdated) = do
+event (State fp tsks row) (AppEvent TodoFileUpdated) = do
   t <- liftIO $ readFile fp
   let newTasks = either (const tsks) id (parseMany t)
-  continue $ State fp newTasks
+  continue $ State fp newTasks row
 -- Default
 event s _ = continue s
 

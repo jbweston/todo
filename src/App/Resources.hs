@@ -12,7 +12,7 @@ module App.Resources
 where
 
 import Graphics.Vty (Attr)
-import Graphics.Vty.Attributes (defAttr, withStyle, bold)
+import Graphics.Vty.Attributes (defAttr, withStyle, bold, standout)
 import Graphics.Vty.Attributes.Color
 import Brick.AttrMap (AttrName)
 import Brick.Util (on, fg)
@@ -46,7 +46,7 @@ tagStyle = "tag"
 
 uiAttrs :: [(AttrName, Attr)]
 uiAttrs =
-  [ (completedStyle, fg blue)
+  [ (completedStyle, defAttr `withStyle` standout)
   , (projectStyle, black `on` blue)
   , (contextStyle, black `on` cyan)
   , (tagStyle, black `on` red)
