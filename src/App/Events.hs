@@ -12,7 +12,12 @@ import Prelude hiding (readFile, writeFile, unlines)
 import Graphics.Vty.Input
 import Brick (vScrollBy, viewportScroll, continue, halt)
 import Brick.Types (BrickEvent(..), EventM, Next)
-import Brick.Widgets.List (handleListEvent, listReplace, listSelectedElement)
+import Brick.Widgets.List
+  ( handleListEvent
+  , listModify
+  , listReplace
+  , listSelectedElement
+  )
 
 import App.Resources
 import App.Types
@@ -29,6 +34,10 @@ event (State fp tsks) (AppEvent TodoFileUpdated) = do
   let selectedId = fst <$> listSelectedElement tsks
       newTasks = either (const tsks) (\l -> listReplace (fromList l) (selectedId) tsks) (parseMany t)
   continue $ State fp newTasks
+-- Task completion
+event (State fp tsks) (VtyEvent (EvKey (KChar 'c') [])) = do
+  now <- liftIO $ today
+  continue $ State fp (listModify (complete now) tsks)
 -- Scrolling
 event s (VtyEvent ev) = do
   newTasks <- handleListEvent ev (sTasks s)

@@ -46,6 +46,7 @@ module Data.Task
     makeDescription,
     newTask,
     getNewTask,
+    today,
     -- Manipulators
     complete,
     completeToday,
