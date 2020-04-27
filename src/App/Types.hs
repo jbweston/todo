@@ -21,7 +21,10 @@ type W = Widget Res
 
 -- | App state
 
-data State = State FilePath [Task] Int
+data State = State { sTodoFile :: FilePath
+                   , sTasks    :: [Task]
+                   , sRow      :: Int
+                   }
 
 -- | Custom events
 data Ev = TodoFileUpdated

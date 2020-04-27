@@ -18,8 +18,14 @@ import Data.Task
 
 event :: State -> BrickEvent Res Ev -> EventM Res (Next State)
 -- Scrolling
-event s (VtyEvent (EvKey KDown []))  = vscroll vpMain 1 >> continue s
-event s (VtyEvent (EvKey KUp []))    = vscroll vpMain (-1) >> continue s
+event s@(State _ tsks row) (VtyEvent (EvKey KDown [])) =
+  continue newState
+  where
+    newState = s{sRow=min (row + 1) (length tsks)}
+event s@(State _ tsks row) (VtyEvent (EvKey KUp [])) =
+  continue newState
+  where
+    newState = s{sRow=max (row - 1) 1}
 -- Quit
 event s (VtyEvent (EvKey KEsc [])) = halt s
 event s (VtyEvent (EvKey (KChar 'q') [])) = halt s
