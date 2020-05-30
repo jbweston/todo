@@ -3,14 +3,12 @@
 module App.Events (event) where
 
 import Control.Monad.IO.Class (liftIO)
-import Data.Text (unlines)
-import Data.Text.IO (readFile, writeFile)
+import Data.Text.IO (readFile)
 import Data.Vector (fromList)
-import Flow
-import Prelude hiding (readFile, writeFile, unlines)
+import Prelude hiding (readFile)
 
 import Graphics.Vty.Input
-import Brick (vScrollBy, viewportScroll, continue, halt)
+import Brick (continue, halt)
 import Brick.Types (BrickEvent(..), EventM, Next)
 import Brick.Widgets.List
   ( handleListEvent
@@ -19,32 +17,45 @@ import Brick.Widgets.List
   , listSelectedElement
   )
 
-import App.Resources
 import App.Types
 
 import Data.Task
 
-event :: State -> BrickEvent Res Ev -> EventM Res (Next State)
+-- Mapping events to actions
+
+event :: BrickEvent Res Ev -> State -> EventM Res (Next State)
 -- Quit
-event s (VtyEvent (EvKey KEsc [])) = halt s
-event s (VtyEvent (EvKey (KChar 'q') [])) = halt s
+event (VtyEvent (EvKey KEsc [])) = halt
+event (VtyEvent (EvKey (KChar 'q') [])) = halt
 -- File changed on disk
-event (State fp tsks) (AppEvent TodoFileUpdated) = do
+event (AppEvent TodoFileUpdated) = fileLoad
+-- Task completion
+event (VtyEvent (EvKey (KChar 'c') []))= completion
+-- Scrolling
+event (VtyEvent ev) = scroll ev
+-- Default
+event _ = continue
+
+
+-- Actions
+
+type Action = State -> EventM Res (Next State)
+
+fileLoad :: Action
+fileLoad (State fp tsks) = do
   t <- liftIO $ readFile fp
   let selectedId = fst <$> listSelectedElement tsks
-      newTasks = either (const tsks) (\l -> listReplace (fromList l) (selectedId) tsks) (parseMany t)
+      newTasks = case parseMany t of
+          Left _ -> tsks
+          Right l -> listReplace (fromList l) selectedId tsks
   continue $ State fp newTasks
--- Task completion
-event (State fp tsks) (VtyEvent (EvKey (KChar 'c') [])) = do
+
+completion :: Action
+completion (State fp tsks) = do
   now <- liftIO $ today
   continue $ State fp (listModify (complete now) tsks)
--- Scrolling
-event s (VtyEvent ev) = do
+
+scroll :: Event -> Action
+scroll ev s = do
   newTasks <- handleListEvent ev (sTasks s)
   continue s{sTasks=newTasks}
--- Default
-event s _ = continue s
-
-vscroll :: Res -> Int -> EventM Res ()
-vscroll vp n = vScrollBy (viewportScroll vp) n
-

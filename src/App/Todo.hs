@@ -36,7 +36,7 @@ import Prelude hiding (readFile, writeFile, unlines)
 app :: App State Ev Res
 app =
   App { appDraw = fmap pure ui
-      , appHandleEvent = event
+      , appHandleEvent = flip event
       , appStartEvent = pure
       , appAttrMap =  const $ attrMap V.defAttr uiAttrs
       , appChooseCursor = neverShowCursor
