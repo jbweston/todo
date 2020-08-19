@@ -50,6 +50,8 @@ module Data.Task
     -- Manipulators
     complete,
     completeToday,
+    uncomplete,
+    toggleComplete,
     setPriority,
     unsetPriority,
     setDescription,
@@ -253,6 +255,15 @@ complete d tsk =
   case creationDate tsk of
     Nothing -> tsk {completed = True}
     _ -> tsk {completed = True, completionDate = Just d}
+
+uncomplete :: Task -> Task
+uncomplete tsk = tsk {completed = False, completionDate = Nothing}
+
+toggleComplete :: Day -> Task -> Task
+toggleComplete d tsk =
+    if completed tsk
+        then uncomplete tsk
+        else complete d tsk
 
 completeToday :: Task -> IO Task
 completeToday tsk = complete <$> today <*> pure tsk

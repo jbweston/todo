@@ -30,7 +30,7 @@ event (VtyEvent (EvKey (KChar 'q') [])) = halt
 -- File changed on disk
 event (AppEvent TodoFileUpdated) = fileLoad
 -- Task completion
-event (VtyEvent (EvKey (KChar ' ') []))= completion
+event (VtyEvent (EvKey (KChar ' ') []))= toggleCompletion
 -- Scrolling
 event (VtyEvent ev) = scroll ev
 -- Default
@@ -50,10 +50,10 @@ fileLoad (State fp tsks) = do
           Right l -> listReplace (fromList l) selectedId tsks
   continue $ State fp newTasks
 
-completion :: Action
-completion (State fp tsks) = do
+toggleCompletion :: Action
+toggleCompletion (State fp tsks) = do
   now <- liftIO $ today
-  continue $ State fp (listModify (complete now) tsks)
+  continue $ State fp (listModify (toggleComplete now) tsks)
 
 scroll :: Event -> Action
 scroll ev s = do
