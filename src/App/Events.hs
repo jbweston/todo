@@ -30,7 +30,7 @@ event (VtyEvent (EvKey (KChar 'q') [])) = halt
 -- File changed on disk
 event (AppEvent TodoFileUpdated) = fileLoad
 -- Task completion
-event (VtyEvent (EvKey (KChar 'c') []))= completion
+event (VtyEvent (EvKey (KChar ' ') []))= completion
 -- Scrolling
 event (VtyEvent ev) = scroll ev
 -- Default
