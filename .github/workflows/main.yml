@@ -7,7 +7,10 @@ jobs:
         strategy:
             max-parallel: 4
             matrix:
-                os: [ubuntu-latest, macos-latest]  # Add windows-latest later
+                # Add macos-latest when
+                # https://github.com/mstksg/setup-stack/issues/7 is solved
+                # Add windows-latest when vty is ported to windows
+                os: [ubuntu-latest]
         runs-on: ${{ matrix.os }}
         steps:
             - uses: actions/checkout@v1
